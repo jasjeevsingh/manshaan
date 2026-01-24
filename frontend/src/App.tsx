@@ -12,13 +12,13 @@ import { useAuthStore } from './stores/authStore';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 
 // Lazy load pages for code splitting
-const HomePage = React.lazy(() => import('./pages/HomePage'));
-const AssessmentPage = React.lazy(() => import('./pages/AssessmentPage'));
-const DashboardPage = React.lazy(() => import('./pages/DashboardPage'));
-const SimulationPage = React.lazy(() => import('./pages/SimulationPage'));
-const LoginPage = React.lazy(() => import('./pages/LoginPage'));
-const RegisterPage = React.lazy(() => import('./pages/RegisterPage'));
-const ProfilePage = React.lazy(() => import('./pages/ProfilePage'));
+const HomePage = React.lazy(() => import('./pages/HomePage.tsx'));
+const AssessmentPage = React.lazy(() => import('./pages/AssessmentPage.tsx'));
+const DashboardPage = React.lazy(() => import('./pages/DashboardPage.tsx'));
+const SimulationPage = React.lazy(() => import('./pages/SimulationPage.tsx'));
+const LoginPage = React.lazy(() => import('./pages/LoginPage.tsx'));
+const RegisterPage = React.lazy(() => import('./pages/RegisterPage.tsx'));
+const ProfilePage = React.lazy(() => import('./pages/ProfilePage.tsx'));
 
 const LoadingSpinner: React.FC = () => (
   <div className="min-h-screen flex items-center justify-center">
