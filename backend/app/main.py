@@ -71,6 +71,10 @@ app.include_router(assessment.router, prefix=settings.api_prefix)
 app.include_router(vision.router, prefix=settings.api_prefix)
 app.include_router(emotion.router, prefix=settings.api_prefix)
 
+# Import and include hume router
+from .routers import hume
+app.include_router(hume.router, prefix=settings.api_prefix)
+
 
 @app.get("/")
 async def root():
