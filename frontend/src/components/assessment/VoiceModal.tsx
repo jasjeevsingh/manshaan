@@ -26,8 +26,8 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({
     prompt,
     instructions,
 }) => {
-    const { disconnect, status, sendUserInput, messages } = useVoice();
-    const { currentEmotions, startListening, stopListening } = useHume();
+    const { connect, disconnect, status, sendUserInput, messages } = useVoice();
+    const { currentEmotions, startListening, stopListening, apiKey, configId } = useHume();
     const [transcript, setTranscript] = useState('');
     const [isRecording, setIsRecording] = useState(false);
     const { sessionId: _sessionId } = useAssessmentStore();
@@ -35,14 +35,17 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({
     // Connect when modal opens
     useEffect(() => {
         if (isOpen) {
-            // Hume VoiceProvider handles connection automatically
+            connect({
+                auth: { type: 'apiKey', value: apiKey },
+                configId: configId,
+            }).catch(console.error);
         } else {
             disconnect();
             stopListening();
             setTranscript('');
             setIsRecording(false);
         }
-    }, [isOpen, disconnect, stopListening]);
+    }, [isOpen, connect, disconnect, stopListening, apiKey, configId]);
 
     // Extract transcript from messages
     useEffect(() => {

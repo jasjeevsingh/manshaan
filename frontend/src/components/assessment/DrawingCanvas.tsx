@@ -216,7 +216,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                 </div>
 
                 {/* Analysis Result */}
-                {analysisResult && (
+                {!!analysisResult && (
                     <div className="mt-md p-md bg-secondary rounded-lg">
                         <p className="text-sm font-medium mb-sm">Analysis Result:</p>
                         <pre className="text-xs overflow-auto">

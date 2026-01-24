@@ -17,6 +17,8 @@ interface HumeContextType {
     currentEmotions: Record<string, number> | null;
     startListening: () => void;
     stopListening: () => void;
+    apiKey: string;
+    configId?: string;
 }
 
 const HumeContext = createContext<HumeContextType | null>(null);
@@ -32,9 +34,10 @@ export const useHume = () => {
 interface HumeProviderProps {
     children: React.ReactNode;
     apiKey: string;
+    configId?: string;
 }
 
-export const HumeProvider: React.FC<HumeProviderProps> = ({ children, apiKey }) => {
+export const HumeProvider: React.FC<HumeProviderProps> = ({ children, apiKey, configId }) => {
     const [isConnected, setIsConnected] = useState(false);
     const [isListening, setIsListening] = useState(false);
     const [currentEmotions, setCurrentEmotions] = useState<Record<string, number> | null>(null);
@@ -118,12 +121,13 @@ export const HumeProvider: React.FC<HumeProviderProps> = ({ children, apiKey }) 
         currentEmotions,
         startListening,
         stopListening,
+        apiKey,
+        configId,
     };
 
     return (
         <HumeContext.Provider value={contextValue}>
             <VoiceProvider
-                configId={apiKey}
                 onOpen={() => setIsConnected(true)}
                 onClose={() => setIsConnected(false)}
                 onMessage={handleMessage}
