@@ -1,0 +1,909 @@
+{
+    "version": "1.0.0",
+    "description": "MIRT Item Bank for Neurodevelopmental Assessment",
+    "items": [
+        {
+            "id": "EM001",
+            "prompt": "I'm going to read you a short story. Listen carefully, then I'll ask you some questions.\n\n'Sarah went to the park with her dog Max. They played fetch near the big oak tree. After an hour, they stopped for ice cream at Joe's stand.'\n\nWhat was the dog's name?",
+            "item_type": "mcq",
+            "domain_loadings": {
+                "episodic_memory": 1.4
+            },
+            "difficulty": -1.5,
+            "guessing": 0.25,
+            "options": [
+                "Buddy",
+                "Max",
+                "Charlie",
+                "Rex"
+            ],
+            "correct_answer": 1
+        },
+        {
+            "id": "EM002",
+            "prompt": "In the story I just told you, where did Sarah and her dog play?",
+            "item_type": "mcq",
+            "domain_loadings": {
+                "episodic_memory": 1.3,
+                "executive_function": 0.3
+            },
+            "difficulty": -1.0,
+            "guessing": 0.25,
+            "options": [
+                "Near the pond",
+                "Near the big oak tree",
+                "On the playground",
+                "By the fountain"
+            ],
+            "correct_answer": 1
+        },
+        {
+            "id": "EM003",
+            "prompt": "What did Sarah and her dog do after playing?",
+            "item_type": "mcq",
+            "domain_loadings": {
+                "episodic_memory": 1.5
+            },
+            "difficulty": -0.5,
+            "guessing": 0.25,
+            "options": [
+                "Went home",
+                "Had lunch",
+                "Got ice cream",
+                "Took a nap"
+            ],
+            "correct_answer": 2
+        },
+        {
+            "id": "EM004",
+            "prompt": "Now I'll tell you another story.\n\n'On Tuesday, Dr. Chen visited the museum at 10am. She saw the dinosaur exhibit first, then the space gallery. She bought a book about planets before leaving at 1pm.'\n\nWhat day did Dr. Chen visit the museum?",
+            "item_type": "mcq",
+            "domain_loadings": {
+                "episodic_memory": 1.2
+            },
+            "difficulty": -1.0,
+            "guessing": 0.25,
+            "options": [
+                "Monday",
+                "Tuesday",
+                "Wednesday",
+                "Thursday"
+            ],
+            "correct_answer": 1
+        },
+        {
+            "id": "EM005",
+            "prompt": "In what order did Dr. Chen see the exhibits?",
+            "item_type": "mcq",
+            "domain_loadings": {
+                "episodic_memory": 1.6,
+                "executive_function": 0.4
+            },
+            "difficulty": 0.0,
+            "guessing": 0.25,
+            "options": [
+                "Space then dinosaur",
+                "Dinosaur then space",
+                "Just dinosaur",
+                "Just space"
+            ],
+            "correct_answer": 1
+        },
+        {
+            "id": "EM006",
+            "prompt": "How long was Dr. Chen at the museum?",
+            "item_type": "mcq",
+            "domain_loadings": {
+                "episodic_memory": 1.3,
+                "processing_speed": 0.5
+            },
+            "difficulty": 0.5,
+            "guessing": 0.25,
+            "options": [
+                "2 hours",
+                "3 hours",
+                "4 hours",
+                "5 hours"
+            ],
+            "correct_answer": 1
+        },
+        {
+            "id": "EM007",
+            "prompt": "Think back to the first story about Sarah. What was the name of the ice cream stand?",
+            "item_type": "mcq",
+            "domain_loadings": {
+                "episodic_memory": 1.8
+            },
+            "difficulty": 1.0,
+            "guessing": 0.25,
+            "options": [
+                "Sam's",
+                "Joe's",
+                "Mike's",
+                "Pat's"
+            ],
+            "correct_answer": 1
+        },
+        {
+            "id": "EM008",
+            "prompt": "What did Dr. Chen buy before leaving the museum?",
+            "item_type": "mcq",
+            "domain_loadings": {
+                "episodic_memory": 1.4
+            },
+            "difficulty": 0.0,
+            "guessing": 0.25,
+            "options": [
+                "A poster",
+                "A toy dinosaur",
+                "A book about planets",
+                "A coffee mug"
+            ],
+            "correct_answer": 2
+        },
+        {
+            "id": "EM009",
+            "prompt": "I'm going to say five words. Please remember them: Apple, Bicycle, Cloud, Doctor, Elephant.\n\nNow, what was the third word I said?",
+            "item_type": "mcq",
+            "domain_loadings": {
+                "episodic_memory": 1.5,
+                "working_memory": 0.6
+            },
+            "difficulty": 0.5,
+            "guessing": 0.2,
+            "options": [
+                "Bicycle",
+                "Cloud",
+                "Doctor",
+                "Apple",
+                "Elephant"
+            ],
+            "correct_answer": 1
+        },
+        {
+            "id": "EM010",
+            "prompt": "What animal word did I mention in the list of five words?",
+            "item_type": "mcq",
+            "domain_loadings": {
+                "episodic_memory": 1.3,
+                "executive_function": 0.3
+            },
+            "difficulty": -0.5,
+            "guessing": 0.2,
+            "options": [
+                "Lion",
+                "Elephant",
+                "Tiger",
+                "Bear",
+                "Monkey"
+            ],
+            "correct_answer": 1
+        },
+        {
+            "id": "EM011",
+            "prompt": "What profession word was in the list of five words?",
+            "item_type": "mcq",
+            "domain_loadings": {
+                "episodic_memory": 1.4
+            },
+            "difficulty": 0.3,
+            "guessing": 0.2,
+            "options": [
+                "Teacher",
+                "Nurse",
+                "Doctor",
+                "Lawyer",
+                "Engineer"
+            ],
+            "correct_answer": 2
+        },
+        {
+            "id": "EM012",
+            "prompt": "Can you repeat all five words I asked you to remember earlier?",
+            "item_type": "voice",
+            "domain_loadings": {
+                "episodic_memory": 1.8,
+                "working_memory": 0.7
+            },
+            "difficulty": 1.5,
+            "guessing": 0.1,
+            "instructions": "Please say all five words. Speak clearly."
+        },
+        {
+            "id": "EF001",
+            "prompt": "Look at this pattern: 2, 4, 6, 8, ?\nWhat number comes next?",
+            "item_type": "mcq",
+            "domain_loadings": {
+                "executive_function": 1.3
+            },
+            "difficulty": -1.5,
+            "guessing": 0.25,
+            "options": [
+                "9",
+                "10",
+                "11",
+                "12"
+            ],
+            "correct_answer": 1
+        },
+        {
+            "id": "EF002",
+            "prompt": "If all Bloops are Razzies, and all Razzies are Lazzies, then all Bloops are definitely Lazzies. True or False?",
+            "item_type": "mcq",
+            "domain_loadings": {
+                "executive_function": 1.6,
+                "working_memory": 0.4
+            },
+            "difficulty": 0.0,
+            "guessing": 0.5,
+            "options": [
+                "True",
+                "False"
+            ],
+            "correct_answer": 0
+        },
+        {
+            "id": "EF003",
+            "prompt": "Sort these activities by what you should do first in the morning: Eat breakfast, Get dressed, Wake up, Brush teeth",
+            "item_type": "mcq",
+            "domain_loadings": {
+                "executive_function": 1.4
+            },
+            "difficulty": -1.0,
+            "guessing": 0.25,
+            "options": [
+                "Wake up, Get dressed, Eat breakfast, Brush teeth",
+                "Wake up, Eat breakfast, Get dressed, Brush teeth",
+                "Get dressed, Wake up, Eat breakfast, Brush teeth",
+                "Eat breakfast, Wake up, Get dressed, Brush teeth"
+            ],
+            "correct_answer": 0
+        },
+        {
+            "id": "EF004",
+            "prompt": "I'm going to say some rules. Press 1 when I say a fruit name, but NOT if it's red.\n\nApple (press?), Banana (press?), Grape (press?), Orange (press?)\n\nHow many times should you have pressed?",
+            "item_type": "mcq",
+            "domain_loadings": {
+                "executive_function": 1.7,
+                "working_memory": 0.5
+            },
+            "difficulty": 1.0,
+            "guessing": 0.25,
+            "options": [
+                "1",
+                "2",
+                "3",
+                "4"
+            ],
+            "correct_answer": 1
+        },
+        {
+            "id": "EF005",
+            "prompt": "What is similar about an apple and an orange?",
+            "item_type": "voice",
+            "domain_loadings": {
+                "executive_function": 1.5,
+                "episodic_memory": 0.3
+            },
+            "difficulty": 0.0,
+            "guessing": 0.1,
+            "instructions": "Explain what these two things have in common."
+        },
+        {
+            "id": "EF006",
+            "prompt": "Look at this pattern: A, C, E, G, ?\nWhat letter comes next?",
+            "item_type": "mcq",
+            "domain_loadings": {
+                "executive_function": 1.4,
+                "working_memory": 0.3
+            },
+            "difficulty": 0.5,
+            "guessing": 0.25,
+            "options": [
+                "H",
+                "I",
+                "J",
+                "K"
+            ],
+            "correct_answer": 1
+        },
+        {
+            "id": "EF007",
+            "prompt": "Mary is taller than John. John is taller than Sam. Who is the shortest?",
+            "item_type": "mcq",
+            "domain_loadings": {
+                "executive_function": 1.5,
+                "working_memory": 0.6
+            },
+            "difficulty": 0.0,
+            "guessing": 0.33,
+            "options": [
+                "Mary",
+                "John",
+                "Sam"
+            ],
+            "correct_answer": 2
+        },
+        {
+            "id": "EF008",
+            "prompt": "If I have 3 apples and give away 1, then someone gives me 2 more, how many do I have?",
+            "item_type": "mcq",
+            "domain_loadings": {
+                "executive_function": 1.3,
+                "working_memory": 0.7
+            },
+            "difficulty": -0.5,
+            "guessing": 0.25,
+            "options": [
+                "2",
+                "3",
+                "4",
+                "5"
+            ],
+            "correct_answer": 2
+        },
+        {
+            "id": "EF009",
+            "prompt": "Name as many animals as you can think of in 30 seconds.",
+            "item_type": "voice",
+            "domain_loadings": {
+                "executive_function": 1.6,
+                "processing_speed": 0.8
+            },
+            "difficulty": 0.5,
+            "guessing": 0.1,
+            "instructions": "Say as many animal names as you can. Go!",
+            "time_limit_seconds": 30
+        },
+        {
+            "id": "EF010",
+            "prompt": "What would you do if you found a wallet on the street with money and an ID inside?",
+            "item_type": "voice",
+            "domain_loadings": {
+                "executive_function": 1.4
+            },
+            "difficulty": 0.0,
+            "guessing": 0.1,
+            "instructions": "Describe what you would do and why."
+        },
+        {
+            "id": "EF011",
+            "prompt": "Look at this pattern: 3, 6, 12, 24, ?\nWhat number comes next?",
+            "item_type": "mcq",
+            "domain_loadings": {
+                "executive_function": 1.6
+            },
+            "difficulty": 1.0,
+            "guessing": 0.25,
+            "options": [
+                "30",
+                "36",
+                "42",
+                "48"
+            ],
+            "correct_answer": 3
+        },
+        {
+            "id": "EF012",
+            "prompt": "Which word does NOT belong with the others: Dog, Cat, Fish, Car",
+            "item_type": "mcq",
+            "domain_loadings": {
+                "executive_function": 1.2
+            },
+            "difficulty": -1.0,
+            "guessing": 0.25,
+            "options": [
+                "Dog",
+                "Cat",
+                "Fish",
+                "Car"
+            ],
+            "correct_answer": 3
+        },
+        {
+            "id": "WM001",
+            "prompt": "Repeat these numbers backwards: 4, 7, 2",
+            "item_type": "mcq",
+            "domain_loadings": {
+                "working_memory": 1.5
+            },
+            "difficulty": -1.0,
+            "guessing": 0.25,
+            "options": [
+                "2, 4, 7",
+                "7, 4, 2",
+                "2, 7, 4",
+                "4, 2, 7"
+            ],
+            "correct_answer": 2
+        },
+        {
+            "id": "WM002",
+            "prompt": "Repeat these numbers backwards: 8, 3, 5, 1",
+            "item_type": "mcq",
+            "domain_loadings": {
+                "working_memory": 1.6
+            },
+            "difficulty": 0.0,
+            "guessing": 0.25,
+            "options": [
+                "1, 5, 3, 8",
+                "8, 5, 3, 1",
+                "5, 1, 3, 8",
+                "3, 8, 1, 5"
+            ],
+            "correct_answer": 0
+        },
+        {
+            "id": "WM003",
+            "prompt": "Repeat these numbers backwards: 6, 2, 9, 4, 7",
+            "item_type": "voice",
+            "domain_loadings": {
+                "working_memory": 1.8
+            },
+            "difficulty": 1.0,
+            "guessing": 0.1,
+            "instructions": "Say these numbers in reverse order."
+        },
+        {
+            "id": "WM004",
+            "prompt": "I'll read some letters and numbers. Put the numbers first (in order), then the letters (in order).\n\nB, 3, A, 1\n\nWhat's the correct order?",
+            "item_type": "mcq",
+            "domain_loadings": {
+                "working_memory": 1.7,
+                "executive_function": 0.5
+            },
+            "difficulty": 0.5,
+            "guessing": 0.25,
+            "options": [
+                "1, 3, A, B",
+                "A, B, 1, 3",
+                "3, 1, B, A",
+                "B, A, 3, 1"
+            ],
+            "correct_answer": 0
+        },
+        {
+            "id": "WM005",
+            "prompt": "Listen to this sequence: Red, Blue, Green, Yellow.\n\nNow I'll say another: Blue, Green, Red, Yellow.\n\nIs the second sequence the same or different?",
+            "item_type": "mcq",
+            "domain_loadings": {
+                "working_memory": 1.4
+            },
+            "difficulty": 0.0,
+            "guessing": 0.5,
+            "options": [
+                "Same",
+                "Different"
+            ],
+            "correct_answer": 1
+        },
+        {
+            "id": "WM006",
+            "prompt": "Add 3 to each number in your head, then tell me the answer: 2, 5, 1",
+            "item_type": "mcq",
+            "domain_loadings": {
+                "working_memory": 1.6,
+                "processing_speed": 0.4
+            },
+            "difficulty": 0.5,
+            "guessing": 0.25,
+            "options": [
+                "5, 8, 4",
+                "5, 7, 4",
+                "6, 8, 4",
+                "5, 8, 3"
+            ],
+            "correct_answer": 0
+        },
+        {
+            "id": "WM007",
+            "prompt": "I'm going to tap a pattern. Count the taps: tap, tap, pause, tap, tap, tap, pause, tap.\n\nHow many taps total?",
+            "item_type": "mcq",
+            "domain_loadings": {
+                "working_memory": 1.3,
+                "processing_speed": 0.3
+            },
+            "difficulty": -0.5,
+            "guessing": 0.25,
+            "options": [
+                "5",
+                "6",
+                "7",
+                "8"
+            ],
+            "correct_answer": 2
+        },
+        {
+            "id": "WM008",
+            "prompt": "Remember this address: 742 Oak Street, Apartment 5B.\n\nNow, what was the street name?",
+            "item_type": "mcq",
+            "domain_loadings": {
+                "working_memory": 1.4,
+                "episodic_memory": 0.4
+            },
+            "difficulty": 0.0,
+            "guessing": 0.25,
+            "options": [
+                "Pine Street",
+                "Elm Street",
+                "Oak Street",
+                "Maple Street"
+            ],
+            "correct_answer": 2
+        },
+        {
+            "id": "WM009",
+            "prompt": "What was the apartment number in the address?",
+            "item_type": "mcq",
+            "domain_loadings": {
+                "working_memory": 1.5
+            },
+            "difficulty": 0.3,
+            "guessing": 0.25,
+            "options": [
+                "3A",
+                "4C",
+                "5B",
+                "6D"
+            ],
+            "correct_answer": 2
+        },
+        {
+            "id": "WM010",
+            "prompt": "Repeat the complete address you heard.",
+            "item_type": "voice",
+            "domain_loadings": {
+                "working_memory": 1.7,
+                "episodic_memory": 0.5
+            },
+            "difficulty": 1.0,
+            "guessing": 0.1,
+            "instructions": "Say the full address including apartment number."
+        },
+        {
+            "id": "PS001",
+            "prompt": "Which is bigger: an elephant or a mouse?",
+            "item_type": "mcq",
+            "domain_loadings": {
+                "processing_speed": 1.0
+            },
+            "difficulty": -2.0,
+            "guessing": 0.5,
+            "options": [
+                "Elephant",
+                "Mouse"
+            ],
+            "correct_answer": 0,
+            "time_limit_seconds": 5
+        },
+        {
+            "id": "PS002",
+            "prompt": "What color is the sky on a clear day?",
+            "item_type": "mcq",
+            "domain_loadings": {
+                "processing_speed": 1.0
+            },
+            "difficulty": -2.0,
+            "guessing": 0.25,
+            "options": [
+                "Red",
+                "Green",
+                "Blue",
+                "Yellow"
+            ],
+            "correct_answer": 2,
+            "time_limit_seconds": 5
+        },
+        {
+            "id": "PS003",
+            "prompt": "How many legs does a dog have?",
+            "item_type": "mcq",
+            "domain_loadings": {
+                "processing_speed": 1.1
+            },
+            "difficulty": -1.5,
+            "guessing": 0.25,
+            "options": [
+                "2",
+                "3",
+                "4",
+                "6"
+            ],
+            "correct_answer": 2,
+            "time_limit_seconds": 5
+        },
+        {
+            "id": "PS004",
+            "prompt": "2 + 2 = ?",
+            "item_type": "mcq",
+            "domain_loadings": {
+                "processing_speed": 1.2
+            },
+            "difficulty": -2.0,
+            "guessing": 0.25,
+            "options": [
+                "3",
+                "4",
+                "5",
+                "6"
+            ],
+            "correct_answer": 1,
+            "time_limit_seconds": 5
+        },
+        {
+            "id": "PS005",
+            "prompt": "7 + 5 = ?",
+            "item_type": "mcq",
+            "domain_loadings": {
+                "processing_speed": 1.3,
+                "working_memory": 0.2
+            },
+            "difficulty": -1.0,
+            "guessing": 0.25,
+            "options": [
+                "10",
+                "11",
+                "12",
+                "13"
+            ],
+            "correct_answer": 2,
+            "time_limit_seconds": 5
+        },
+        {
+            "id": "PS006",
+            "prompt": "15 - 8 = ?",
+            "item_type": "mcq",
+            "domain_loadings": {
+                "processing_speed": 1.4,
+                "working_memory": 0.3
+            },
+            "difficulty": -0.5,
+            "guessing": 0.25,
+            "options": [
+                "6",
+                "7",
+                "8",
+                "9"
+            ],
+            "correct_answer": 1,
+            "time_limit_seconds": 5
+        },
+        {
+            "id": "PS007",
+            "prompt": "Say the days of the week as fast as you can.",
+            "item_type": "voice",
+            "domain_loadings": {
+                "processing_speed": 1.5
+            },
+            "difficulty": -0.5,
+            "guessing": 0.1,
+            "instructions": "Start from Sunday. Go as fast as you can!",
+            "time_limit_seconds": 15
+        },
+        {
+            "id": "PS008",
+            "prompt": "Count backwards from 20 to 1 as fast as you can.",
+            "item_type": "voice",
+            "domain_loadings": {
+                "processing_speed": 1.6,
+                "working_memory": 0.4
+            },
+            "difficulty": 0.0,
+            "guessing": 0.1,
+            "instructions": "Start now!",
+            "time_limit_seconds": 20
+        },
+        {
+            "id": "PS009",
+            "prompt": "Which of these is NOT a color: Red, Blue, Chair, Green?",
+            "item_type": "mcq",
+            "domain_loadings": {
+                "processing_speed": 1.2,
+                "executive_function": 0.3
+            },
+            "difficulty": -1.0,
+            "guessing": 0.25,
+            "options": [
+                "Red",
+                "Blue",
+                "Chair",
+                "Green"
+            ],
+            "correct_answer": 2,
+            "time_limit_seconds": 5
+        },
+        {
+            "id": "PS010",
+            "prompt": "Quick! What month comes after May?",
+            "item_type": "mcq",
+            "domain_loadings": {
+                "processing_speed": 1.3
+            },
+            "difficulty": -1.0,
+            "guessing": 0.25,
+            "options": [
+                "April",
+                "June",
+                "July",
+                "August"
+            ],
+            "correct_answer": 1,
+            "time_limit_seconds": 5
+        },
+        {
+            "id": "VS001",
+            "prompt": "Copy this simple shape onto the drawing canvas.",
+            "item_type": "drawing",
+            "domain_loadings": {
+                "visuospatial": 1.4
+            },
+            "difficulty": -1.0,
+            "guessing": 0.1,
+            "instructions": "Draw a circle in the center of the canvas."
+        },
+        {
+            "id": "VS002",
+            "prompt": "Copy this shape: a square with a diagonal line from corner to corner.",
+            "item_type": "drawing",
+            "domain_loadings": {
+                "visuospatial": 1.5
+            },
+            "difficulty": 0.0,
+            "guessing": 0.1,
+            "instructions": "Draw a square, then draw a line from one corner to the opposite corner."
+        },
+        {
+            "id": "VS003",
+            "prompt": "Draw a clock showing the time 3:00.",
+            "item_type": "drawing",
+            "domain_loadings": {
+                "visuospatial": 1.6,
+                "executive_function": 0.4
+            },
+            "difficulty": 0.5,
+            "guessing": 0.1,
+            "instructions": "Draw a clock face with all the numbers, and hands showing 3 o'clock."
+        },
+        {
+            "id": "VS004",
+            "prompt": "Which shape is different from the others?",
+            "item_type": "mcq",
+            "domain_loadings": {
+                "visuospatial": 1.3
+            },
+            "difficulty": -1.0,
+            "guessing": 0.25,
+            "options": [
+                "Circle",
+                "Square",
+                "Rectangle",
+                "Elephant"
+            ],
+            "correct_answer": 3
+        },
+        {
+            "id": "VS005",
+            "prompt": "If you fold a square piece of paper in half diagonally, what shape do you get?",
+            "item_type": "mcq",
+            "domain_loadings": {
+                "visuospatial": 1.5
+            },
+            "difficulty": 0.0,
+            "guessing": 0.25,
+            "options": [
+                "Square",
+                "Rectangle",
+                "Triangle",
+                "Circle"
+            ],
+            "correct_answer": 2
+        },
+        {
+            "id": "VS006",
+            "prompt": "How many sides does a hexagon have?",
+            "item_type": "mcq",
+            "domain_loadings": {
+                "visuospatial": 1.2,
+                "episodic_memory": 0.3
+            },
+            "difficulty": 0.5,
+            "guessing": 0.25,
+            "options": [
+                "4",
+                "5",
+                "6",
+                "8"
+            ],
+            "correct_answer": 2
+        },
+        {
+            "id": "VS007",
+            "prompt": "Copy this complex figure: overlapping shapes.",
+            "item_type": "drawing",
+            "domain_loadings": {
+                "visuospatial": 1.8,
+                "executive_function": 0.5
+            },
+            "difficulty": 1.5,
+            "guessing": 0.1,
+            "instructions": "Draw two overlapping circles, like a Venn diagram."
+        },
+        {
+            "id": "VS008",
+            "prompt": "If you rotate the letter 'N' 90 degrees clockwise, what does it look like?",
+            "item_type": "mcq",
+            "domain_loadings": {
+                "visuospatial": 1.6
+            },
+            "difficulty": 1.0,
+            "guessing": 0.25,
+            "options": [
+                "Z",
+                "N",
+                "Sideways N",
+                "M"
+            ],
+            "correct_answer": 2
+        },
+        {
+            "id": "VS009",
+            "prompt": "Draw a house with a door, two windows, and a chimney.",
+            "item_type": "drawing",
+            "domain_loadings": {
+                "visuospatial": 1.4,
+                "executive_function": 0.3
+            },
+            "difficulty": 0.0,
+            "guessing": 0.1,
+            "instructions": "Draw a simple house. Include all the parts mentioned."
+        },
+        {
+            "id": "VS010",
+            "prompt": "Which direction is the arrow pointing? →",
+            "item_type": "mcq",
+            "domain_loadings": {
+                "visuospatial": 1.0,
+                "processing_speed": 0.3
+            },
+            "difficulty": -1.5,
+            "guessing": 0.25,
+            "options": [
+                "Up",
+                "Down",
+                "Left",
+                "Right"
+            ],
+            "correct_answer": 3
+        },
+        {
+            "id": "VS011",
+            "prompt": "Draw the Beery-Buktenica VMI Figure: a diamond inside a square.",
+            "item_type": "drawing",
+            "domain_loadings": {
+                "visuospatial": 1.7
+            },
+            "difficulty": 1.0,
+            "guessing": 0.1,
+            "instructions": "Draw a square, then draw a diamond shape inside it so the corners of the diamond touch the midpoints of the square's sides."
+        },
+        {
+            "id": "VS012",
+            "prompt": "Copy this pattern: triangle, circle, square, triangle, circle, ?\nWhat comes next?",
+            "item_type": "mcq",
+            "domain_loadings": {
+                "visuospatial": 1.3,
+                "executive_function": 0.5
+            },
+            "difficulty": 0.0,
+            "guessing": 0.25,
+            "options": [
+                "Triangle",
+                "Circle",
+                "Square",
+                "Star"
+            ],
+            "correct_answer": 2
+        }
+    ]
+}
