@@ -7,12 +7,13 @@
 
 import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
-import { AIDisclaimer } from './components/compliance/AIDisclaimer';
 import { useAuthStore } from './stores/authStore';
 import ProtectedRoute from './components/auth/ProtectedRoute';
+import logoImage from './logo/WhatsApp Image 2026-01-24 at 12.04.53.jpeg';
 
 // Lazy load pages for code splitting
 const HomePage = React.lazy(() => import('./pages/HomePage'));
+const AboutPage = React.lazy(() => import('./pages/AboutPage'));
 const AssessmentPage = React.lazy(() => import('./pages/AssessmentPage'));
 const DashboardPage = React.lazy(() => import('./pages/DashboardPage'));
 const SimulationPage = React.lazy(() => import('./pages/SimulationPage'));
@@ -30,42 +31,42 @@ const Navigation: React.FC = () => {
   const { user, signOut } = useAuthStore();
 
   return (
-    <nav className="bg-card shadow-sm border-b sticky top-0 z-40">
+    <nav className="sticky top-0 z-40" style={{ background: 'var(--color-primary)', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
       <div className="container flex items-center justify-between py-md">
-        <Link to="/" className="flex items-center gap-sm text-primary font-bold text-xl">
-          <svg width="32" height="32" viewBox="0 0 100 100" fill="currentColor">
-            <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="4" />
-            <path d="M30 50 L45 65 L70 35" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
-            <circle cx="50" cy="25" r="6" />
-            <circle cx="75" cy="50" r="6" />
-            <circle cx="50" cy="75" r="6" />
-            <circle cx="25" cy="50" r="6" />
-          </svg>
+        <Link to="/" className="flex items-center gap-sm font-bold text-xl" style={{ color: 'white' }}>
+          <img
+            src={logoImage}
+            alt="Manshaan Logo"
+            style={{ height: '40px', width: 'auto', borderRadius: '8px' }}
+          />
           Manshaan
         </Link>
 
         <div className="flex items-center gap-md">
           {user ? (
             <>
-              <Link to="/assessment" className="btn btn-primary btn-sm">
+              <Link to="/assessment" className="btn btn-sm" style={{ background: 'white', color: 'var(--color-primary)' }}>
                 Start Assessment
               </Link>
-              <Link to="/dashboard" className="btn btn-secondary btn-sm">
+              <Link to="/dashboard" className="btn btn-sm" style={{ background: 'transparent', color: 'white', border: '1px solid rgba(255,255,255,0.5)' }}>
                 Dashboard
               </Link>
-              <Link to="/profile" className="btn btn-secondary btn-sm">
+              <Link to="/profile" className="btn btn-sm" style={{ background: 'transparent', color: 'white', border: '1px solid rgba(255,255,255,0.5)' }}>
                 Profile
               </Link>
             </>
           ) : (
             <>
-              <Link to="/simulation" className="btn btn-secondary btn-sm">
+              <Link to="/about" className="btn btn-sm" style={{ background: 'transparent', color: 'white' }}>
+                About
+              </Link>
+              <Link to="/simulation" className="btn btn-sm" style={{ background: 'transparent', color: 'white', border: '1px solid rgba(255,255,255,0.5)' }}>
                 IRT Demo
               </Link>
-              <Link to="/login" className="btn btn-secondary btn-sm">
+              <Link to="/login" className="btn btn-sm" style={{ background: 'transparent', color: 'white', border: '1px solid rgba(255,255,255,0.5)' }}>
                 Sign In
               </Link>
-              <Link to="/register" className="btn btn-primary btn-sm">
+              <Link to="/register" className="btn btn-sm" style={{ background: 'white', color: 'var(--color-primary)' }}>
                 Sign Up
               </Link>
             </>
@@ -77,10 +78,12 @@ const Navigation: React.FC = () => {
 };
 
 const Footer: React.FC = () => (
-  <footer className="bg-secondary py-lg mt-2xl">
+  <footer className="py-lg mt-2xl" style={{ background: 'var(--color-primary)' }}>
     <div className="container">
-      <AIDisclaimer variant="inline" />
-      <p className="text-xs text-muted mt-md text-center">
+      <p className="text-sm mt-md text-center" style={{ color: 'rgba(255,255,255,0.9)' }}>
+        AI-Generated Content - This is NOT a diagnosis. Please consult a licensed healthcare provider.
+      </p>
+      <p className="text-xs mt-md text-center" style={{ color: 'rgba(255,255,255,0.7)' }}>
         © 2026 Manshaan Platform. For research and clinical screening purposes only.
         <br />
         Not a diagnostic tool. Results must be interpreted by licensed healthcare providers.
@@ -107,6 +110,7 @@ const App: React.FC = () => {
           <React.Suspense fallback={<LoadingSpinner />}>
             <Routes>
               <Route path="/" element={<HomePage />} />
+              <Route path="/about" element={<AboutPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/simulation" element={<SimulationPage />} />
