@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     openai_api_key: Optional[str] = None
     google_api_key: Optional[str] = None
     hume_api_key: Optional[str] = None
+    hume_secret_key: Optional[str] = None
     
     # Supabase
     supabase_url: Optional[str] = None

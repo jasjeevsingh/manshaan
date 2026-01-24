@@ -1,14 +1,11 @@
 /**
- * Voice Modal Component
+ * Voice Modal Component - With Proper Token Authentication
  * 
- * "Talk Now" modal for Hume EVI voice interaction.
- * Displays emotion indicators and handles voice assessment items.
+ * Fetches access token from backend for secure Hume EVI connection.
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useVoice } from '@humeai/voice-react';
-import { useHume } from '../../providers/HumeProvider';
-import { useAssessmentStore } from '../../stores/assessmentStore';
 import AIDisclaimer from '../compliance/AIDisclaimer';
 
 interface VoiceModalProps {
@@ -26,170 +23,250 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({
     prompt,
     instructions,
 }) => {
-    const { connect, disconnect, status, sendUserInput, messages } = useVoice();
-    const { currentEmotions, startListening, stopListening, apiKey, configId } = useHume();
+    const configId = import.meta.env.VITE_HUME_CONFIG_ID;
+    const { connect, disconnect, status, messages } = useVoice();
+
     const [transcript, setTranscript] = useState('');
     const [isRecording, setIsRecording] = useState(false);
-    const { sessionId: _sessionId } = useAssessmentStore();
+    const [debugLog, setDebugLog] = useState<string[]>([]);
+    const [showDebug, setShowDebug] = useState(true);
+    const [connectionError, setConnectionError] = useState<string | null>(null);
+    const hasConnected = useRef(false);
+
+    const addLog = useCallback((message: string) => {
+        const timestamp = new Date().toLocaleTimeString();
+        const logMessage = `[${timestamp}] ${message}`;
+        console.log(logMessage);
+        setDebugLog(prev => [...prev.slice(-6), logMessage]); // Keep last 7 logs
+    }, []);
+
+    // Monitor status changes
+    useEffect(() => {
+        addLog(`Status changed: ${status.value}`);
+
+        if (status.value === 'error') {
+            addLog('⚠️ Connection error occurred');
+            setConnectionError('Connection to Hume AI failed. Click "Skip Task" to continue.');
+        } else if (status.value === 'connected') {
+            setConnectionError(null);
+        }
+    }, [status.value, addLog]);
 
     // Connect when modal opens
     useEffect(() => {
-        if (isOpen) {
-            connect({
-                auth: { type: 'apiKey', value: apiKey },
-                configId: configId,
-            }).catch(console.error);
-        } else {
-            disconnect();
-            stopListening();
+        if (!isOpen) {
+            addLog('Modal closed, cleaning up');
+            hasConnected.current = false;
             setTranscript('');
             setIsRecording(false);
+            setConnectionError(null);
+            return;
         }
-    }, [isOpen, connect, disconnect, stopListening, apiKey, configId]);
 
-    // Extract transcript from messages
+        if (hasConnected.current) {
+            addLog('Already attempted connection, skipping');
+            return;
+        }
+
+        addLog('Modal opened, fetching access token...');
+        hasConnected.current = true;
+
+        // Fetch access token from backend
+        const fetchTokenAndConnect = async () => {
+            try {
+                const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+                addLog(`Requesting token from: ${apiBaseUrl}/hume/token`);
+
+                const response = await fetch(`${apiBaseUrl}/hume/token`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Token request failed: ${response.status} - ${errorText}`);
+                }
+
+                const tokenData = await response.json();
+                addLog('✓ Access token received');
+                addLog(`Token expires in: ${tokenData.expires_in}s`);
+
+                // Connect with access token
+                const connectOptions: any = {
+                    auth: {
+                        type: 'accessToken',
+                        value: tokenData.access_token
+                    }
+                };
+
+                if (configId) {
+                    connectOptions.configId = configId;
+                    addLog(`Using config ID: ${configId}`);
+                }
+
+                addLog('Connecting to Hume EVI...');
+                await connect(connectOptions);
+                addLog('✓ Connection successful');
+
+            } catch (error: any) {
+                addLog(`✗ Connection failed: ${error.message}`);
+                setConnectionError(`Failed to connect: ${error.message}. Click "Skip Task" to continue.`);
+                console.error('Full error:', error);
+            }
+        };
+
+        fetchTokenAndConnect();
+    }, [isOpen, configId, connect, addLog]);
+
+    // Monitor messages
     useEffect(() => {
         if (messages.length > 0) {
             const lastMessage = messages[messages.length - 1];
+            addLog(`Message received: ${lastMessage.type}`);
+
             if (lastMessage.type === 'user_message' && lastMessage.message?.content) {
-                setTranscript((prev) => prev + ' ' + lastMessage.message.content);
+                const content = lastMessage.message.content;
+                addLog(`Transcript: ${content}`);
+                setTranscript(prev => prev + ' ' + content);
             }
         }
-    }, [messages]);
+    }, [messages, addLog]);
 
     const handleStartRecording = useCallback(() => {
+        addLog('Start recording clicked');
         setIsRecording(true);
-        startListening();
-        // Send prompt to Hume to start conversation
-        if (prompt) {
-            sendUserInput(prompt);
-        }
-    }, [startListening, sendUserInput, prompt]);
+    }, [addLog]);
 
     const handleStopRecording = useCallback(() => {
+        addLog('Stop recording clicked');
         setIsRecording(false);
-        stopListening();
+
         if (onComplete && transcript.trim()) {
+            addLog(`Submitting transcript: ${transcript.trim()}`);
             onComplete(transcript.trim());
+        } else {
+            addLog('No transcript to submit');
         }
-    }, [stopListening, onComplete, transcript]);
+    }, [onComplete, transcript, addLog]);
 
-    const getEmotionIndicator = (emotion: string, value: number) => {
-        const colors = {
-            anxiety: { bg: '#fed7d7', color: '#c53030' },
-            calm: { bg: '#c6f6d5', color: '#22543d' },
-            distress: { bg: '#feebc8', color: '#c05621' },
-        };
-        const style = colors[emotion as keyof typeof colors] || { bg: '#e2e8f0', color: '#4a5568' };
+    const handleSkip = useCallback(() => {
+        addLog('Skipping voice task');
+        if (onComplete) {
+            onComplete('[Voice task skipped]');
+        }
+        onClose();
+    }, [onComplete, onClose, addLog]);
 
-        return (
-            <div
-                key={emotion}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm"
-                style={{ background: style.bg, color: style.color }}
-            >
-                <span className="capitalize font-medium">{emotion}</span>
-                <span className="font-bold">{(value * 100).toFixed(0)}%</span>
-            </div>
-        );
-    };
+    const handleClose = useCallback(() => {
+        addLog('Closing modal');
+        try {
+            disconnect();
+        } catch (e) {
+            addLog(`Error on close: ${e}`);
+        }
+        onClose();
+    }, [disconnect, onClose, addLog]);
 
     if (!isOpen) return null;
 
+    const isConnected = status.value === 'connected';
+    const isConnecting = status.value === 'connecting';
+
     return (
-        <div className="modal-overlay" onClick={onClose}>
-            <div className="modal-content voice-modal p-lg" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-overlay" onClick={handleClose}>
+            <div className="modal-content voice-modal p-lg" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
                 {/* Header */}
-                <div className="mb-lg">
-                    <h3 className="text-xl font-semibold mb-sm">Voice Assessment</h3>
+                <div className="mb-md">
+                    <h3 className="text-xl font-semibold mb-sm">Voice Assessment 🎤</h3>
                     <p className="text-muted text-sm">
-                        {instructions || 'Speak clearly. Your voice patterns help us understand how you are feeling.'}
+                        {instructions || 'Speak clearly when recording.'}
                     </p>
                 </div>
 
-                {/* Voice indicator */}
-                <div className={`voice-indicator ${isRecording ? 'active' : ''}`}>
-                    <svg
-                        width="48"
-                        height="48"
-                        viewBox="0 0 24 24"
-                        fill="white"
-                        xmlns="http://www.w3.org/2000/svg"
+                {/* Debug Toggle */}
+                <div className="mb-sm">
+                    <button
+                        onClick={() => setShowDebug(!showDebug)}
+                        className="text-xs text-primary underline"
                     >
-                        <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" />
-                        <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
-                    </svg>
+                        {showDebug ? 'Hide' : 'Show'} Debug Info
+                    </button>
                 </div>
 
-                {/* Status */}
-                <p className="text-sm text-secondary mb-md">
-                    {status.value === 'connected' ? (
-                        isRecording ? (
-                            <span className="text-success">● Recording...</span>
-                        ) : (
-                            <span className="text-primary">Connected - Ready</span>
-                        )
-                    ) : status.value === 'connecting' ? (
-                        <span className="text-warning">Connecting...</span>
-                    ) : (
-                        <span className="text-muted">Disconnected</span>
-                    )}
-                </p>
+                {/* Debug Log */}
+                {showDebug && (
+                    <div className="bg-gray-900 text-green-400 p-sm rounded mb-md text-xs font-mono overflow-auto" style={{ maxHeight: '150px', background: '#1a202c', color: '#68d391' }}>
+                        {debugLog.map((log, i) => (
+                            <div key={i}>{log}</div>
+                        ))}
+                    </div>
+                )}
 
-                {/* Prompt display */}
+                {/* Status */}
+                <div className="mb-md p-md rounded" style={{ background: isConnected ? '#c6f6d5' : isConnecting ? '#fefcbf' : '#fed7d7' }}>
+                    <p className="text-sm font-medium">
+                        Status: {status.value}
+                    </p>
+                    {isConnecting && <p className="text-xs mt-1">Connecting to Hume AI...</p>}
+                    {isConnected && <p className="text-xs mt-1 text-success">✓ Ready to record</p>}
+                    {connectionError && <p className="text-xs mt-1 text-danger">{connectionError}</p>}
+                </div>
+
+                {/* Prompt */}
                 {prompt && (
-                    <div className="bg-secondary p-md rounded-lg mb-md text-left">
-                        <p className="text-sm font-medium text-secondary mb-sm">Prompt:</p>
+                    <div className="bg-secondary p-md rounded-lg mb-md">
+                        <p className="text-sm font-medium mb-1">Task:</p>
                         <p className="text-sm">{prompt}</p>
                     </div>
                 )}
 
-                {/* Emotion indicators */}
-                {currentEmotions && (
-                    <div className="flex flex-wrap justify-center gap-sm mb-lg">
-                        {getEmotionIndicator('anxiety', currentEmotions.anxiety || currentEmotions.fear || 0)}
-                        {getEmotionIndicator('calm', currentEmotions.calm || currentEmotions.contentment || 0)}
-                        {getEmotionIndicator('distress', currentEmotions.distress || currentEmotions.sadness || 0)}
-                    </div>
-                )}
-
-                {/* Transcript preview */}
+                {/* Transcript */}
                 {transcript && (
-                    <div className="bg-secondary p-md rounded-lg mb-md text-left max-h-32 overflow-y-auto">
-                        <p className="text-xs text-muted mb-sm">Transcript:</p>
+                    <div className="bg-blue-50 p-md rounded mb-md" style={{ background: '#ebf8ff' }}>
+                        <p className="text-xs text-muted mb-1">Transcript:</p>
                         <p className="text-sm">{transcript}</p>
                     </div>
                 )}
 
                 {/* Controls */}
-                <div className="flex gap-md justify-center">
-                    {!isRecording ? (
+                <div className="flex gap-sm justify-center flex-wrap">
+                    {!isRecording && isConnected && (
                         <button
-                            className="btn btn-primary btn-lg"
+                            className="btn btn-primary"
                             onClick={handleStartRecording}
-                            disabled={status.value !== 'connected'}
                         >
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" />
-                            </svg>
-                            Start Speaking
-                        </button>
-                    ) : (
-                        <button className="btn btn-danger btn-lg" onClick={handleStopRecording}>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                                <rect x="6" y="6" width="12" height="12" rx="2" />
-                            </svg>
-                            Stop & Submit
+                            🎤 Start Recording
                         </button>
                     )}
 
-                    <button className="btn btn-secondary" onClick={onClose}>
+                    {isRecording && (
+                        <button
+                            className="btn btn-danger"
+                            onClick={handleStopRecording}
+                        >
+                            ⏹️ Stop & Submit
+                        </button>
+                    )}
+
+                    <button
+                        className="btn btn-accent"
+                        onClick={handleSkip}
+                    >
+                        Skip Task
+                    </button>
+
+                    <button
+                        className="btn btn-secondary"
+                        onClick={handleClose}
+                    >
                         Cancel
                     </button>
                 </div>
 
                 {/* Disclaimer */}
-                <div className="mt-lg">
+                <div className="mt-md">
                     <AIDisclaimer variant="compact" />
                 </div>
             </div>
