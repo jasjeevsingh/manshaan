@@ -34,24 +34,27 @@ const AssessmentPage: React.FC = () => {
         setItemsRemaining,
     } = useAssessmentStore();
 
-    const [patientId, setPatientId] = useState('');
+    // const [patientId, setPatientId] = useState(''); // Commented out - no longer needed
     const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
     const [showVoiceModal, setShowVoiceModal] = useState(false);
     const [showDrawingCanvas, setShowDrawingCanvas] = useState(false);
 
     // Start new session
     const handleStartSession = async () => {
-        if (!patientId.trim()) {
-            setError('Please enter a Patient ID');
-            return;
-        }
+        // No longer require patient ID - auto-generate from session
+        // if (!patientId.trim()) {
+        //     setError('Please enter a Patient ID');
+        //     return;
+        // }
 
         setLoading(true);
         setError(null);
 
         try {
-            const result = await assessmentService.startSession({ patient_id: patientId });
-            startSession(result.session_id, patientId, null, result.first_item as IRTItem);
+            // Use a timestamp-based ID for now
+            const autoPatientId = `patient_${Date.now()}`;
+            const result = await assessmentService.startSession({ patient_id: autoPatientId });
+            startSession(result.session_id, autoPatientId, null, result.first_item as IRTItem);
         } catch (err) {
             setError('Failed to start session. Is the backend running?');
             console.error(err);
@@ -189,7 +192,8 @@ const AssessmentPage: React.FC = () => {
 
                         <AIDisclaimer />
 
-                        <div className="mt-lg">
+                        {/* Patient ID input - commented out for now */}
+                        {/* <div className="mt-lg">
                             <label className="label">Patient ID</label>
                             <input
                                 type="text"
@@ -198,7 +202,7 @@ const AssessmentPage: React.FC = () => {
                                 value={patientId}
                                 onChange={(e) => setPatientId(e.target.value)}
                             />
-                        </div>
+                        </div> */}
 
                         {error && (
                             <p className="text-danger text-sm mt-sm">{error}</p>
