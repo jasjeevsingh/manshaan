@@ -1,139 +1,256 @@
 """
-Authentication Router.
+Authentication Router with Supabase.
 
-Handles user registration and login.
-Simplified implementation - use proper auth in production.
+Handles user authentication via Supabase Auth including Google OAuth.
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends, Header
 from pydantic import BaseModel
-from datetime import datetime, timedelta
 from typing import Optional
-import uuid
 import logging
 
-from jose import jwt
-
-from ..models.user import User, UserCreate, UserRole, Token
+from ..models.user import User, UserCreate, UserRole, Token, AuthProvider, Child
+from ..services.supabase_client import get_supabase_service, SupabaseService
 from ..config import get_settings
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
-# In-memory user storage (replace with database in production)
-_users: dict[str, dict] = {}
+
+class GoogleAuthRequest(BaseModel):
+    """Request for Google OAuth."""
+    id_token: str
 
 
-class LoginRequest(BaseModel):
-    """Login request."""
-    email: str
-    password: str
+class RefreshTokenRequest(BaseModel):
+    """Request to refresh access token."""
+    refresh_token: str
 
 
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
-    """Create JWT access token."""
-    settings = get_settings()
-    to_encode = data.copy()
-    
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(minutes=settings.access_token_expire_minutes)
-    
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
-    
-    return encoded_jwt
-
-
-@router.post("/register", response_model=Token)
-async def register(request: UserCreate):
+def get_current_user(
+    authorization: Optional[str] = Header(None),
+    supabase: SupabaseService = Depends(get_supabase_service)
+) -> User:
     """
-    Register a new user.
+    Dependency to get current authenticated user.
     
-    Creates user account and returns JWT token.
+    Extracts and verifies JWT token from Authorization header.
     """
-    # Check if email already exists
-    for user_data in _users.values():
-        if user_data["email"] == request.email:
-            raise HTTPException(
-                status_code=400,
-                detail="Email already registered"
-            )
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Not authenticated")
     
-    # Create user
-    user_id = str(uuid.uuid4())
-    user = User(
-        id=user_id,
-        email=request.email,
-        name=request.name,
-        role=request.role
-    )
-    
-    # Store user (hash password in production!)
-    _users[user_id] = {
-        **user.model_dump(),
-        "password": request.password  # NEVER do this in production
-    }
-    
-    # Create token
-    access_token = create_access_token(
-        data={"sub": user.email, "user_id": user_id, "role": user.role.value}
-    )
-    
-    return Token(
-        access_token=access_token,
-        user=user
-    )
-
-
-@router.post("/login", response_model=Token)
-async def login(request: LoginRequest):
-    """
-    Login with email and password.
-    
-    Returns JWT token on success.
-    """
-    # Find user by email
-    user_data = None
-    for data in _users.values():
-        if data["email"] == request.email:
-            user_data = data
-            break
+    token = authorization.split(" ")[1]
+    user_data = supabase.verify_token(token)
     
     if not user_data:
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid email or password"
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    
+    # Fetch user profile from Supabase database
+    if not supabase.client:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+    
+    try:
+        response = supabase.client.table("profiles").select("*").eq("id", user_data["id"]).execute()
+        if not response.data or len(response.data) == 0:
+            raise HTTPException(status_code=404, detail="User profile not found")
+        
+        profile = response.data[0]
+        
+        # Fetch children
+        children_response = supabase.client.table("children").select("*").eq("parent_id", user_data["id"]).execute()
+        children = [Child(**child) for child in children_response.data] if children_response.data else []
+        
+        return User(
+            id=profile["id"],
+            email=profile["email"],
+            name=profile["name"],
+            role=UserRole(profile.get("role", "parent")),
+            provider=AuthProvider(profile.get("provider", "email")),
+            children=children,
+            created_at=profile["created_at"],
+            is_active=profile.get("is_active", True)
         )
-    
-    # Check password (use proper hashing in production!)
-    if user_data["password"] != request.password:
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid email or password"
-        )
-    
-    # Create user object
-    user = User(
-        id=user_data["id"],
-        email=user_data["email"],
-        name=user_data["name"],
-        role=UserRole(user_data["role"])
-    )
-    
-    # Create token
-    access_token = create_access_token(
-        data={"sub": user.email, "user_id": user.id, "role": user.role.value}
-    )
-    
-    return Token(
-        access_token=access_token,
-        user=user
-    )
+    except Exception as e:
+        logger.error(f"Error fetching user profile: {e}")
+        raise HTTPException(status_code=500, detail="Error fetching user profile")
 
 
-@router.get("/me")
-async def get_current_user():
-    """Get current user info (placeholder - needs auth middleware)."""
-    return {"message": "Implement auth middleware to get current user"}
+@router.post("/google", response_model=Token)
+async def google_auth(
+    request: GoogleAuthRequest,
+    supabase: SupabaseService = Depends(get_supabase_service)
+):
+    """
+    Authenticate with Google OAuth.
+    
+    Exchanges Google ID token for Supabase session.
+    """
+    if not supabase.client:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+    
+    try:
+        # Sign in with Google ID token
+        response = supabase.client.auth.sign_in_with_id_token({
+            "provider": "google",
+            "token": request.id_token
+        })
+        
+        if not response.user or not response.session:
+            raise HTTPException(status_code=401, detail="Google authentication failed")
+        
+        # Create or update profile
+        user_data = response.user
+        profile_data = {
+            "id": user_data.id,
+            "email": user_data.email,
+            "name": user_data.user_metadata.get("full_name", user_data.email.split("@")[0]),
+            "role": "parent",
+            "provider": "google"
+        }
+        
+        supabase.client.table("profiles").upsert(profile_data).execute()
+        
+        # Fetch complete user profile
+        user = get_current_user(f"Bearer {response.session.access_token}", supabase)
+        
+        return Token(
+            access_token=response.session.access_token,
+            token_type="bearer",
+            user=user
+        )
+    except Exception as e:
+        logger.error(f"Google auth error: {e}")
+        raise HTTPException(status_code=500, detail=f"Authentication error: {str(e)}")
+
+
+@router.post("/refresh", response_model=Token)
+async def refresh_token(
+    request: RefreshTokenRequest,
+    supabase: SupabaseService = Depends(get_supabase_service)
+):
+    """
+    Refresh access token using refresh token.
+    """
+    if not supabase.client:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+    
+    try:
+        response = supabase.client.auth.refresh_session(request.refresh_token)
+        
+        if not response.session:
+            raise HTTPException(status_code=401, detail="Invalid refresh token")
+        
+        user = get_current_user(f"Bearer {response.session.access_token}", supabase)
+        
+        return Token(
+            access_token=response.session.access_token,
+            token_type="bearer",
+            user=user
+        )
+    except Exception as e:
+        logger.error(f"Token refresh error: {e}")
+        raise HTTPException(status_code=401, detail="Token refresh failed")
+
+
+@router.get("/me", response_model=User)
+async def get_me(current_user: User = Depends(get_current_user)):
+    """Get current authenticated user profile."""
+    return current_user
+
+
+@router.post("/logout")
+async def logout(
+    authorization: Optional[str] = Header(None),
+    supabase: SupabaseService = Depends(get_supabase_service)
+):
+    """
+    Logout current user.
+    
+    Invalidates the current session.
+    """
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    token = authorization.split(" ")[1]
+    
+    if not supabase.client:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+    
+    try:
+        supabase.client.auth.sign_out(token)
+        return {"message": "Logged out successfully"}
+    except Exception as e:
+        logger.error(f"Logout error: {e}")
+        raise HTTPException(status_code=500, detail="Logout failed")
+
+
+# Child profile management endpoints
+@router.post("/children", response_model=Child)
+async def create_child(
+    child_data: dict,
+    current_user: User = Depends(get_current_user),
+    supabase: SupabaseService = Depends(get_supabase_service)
+):
+    """Create a new child profile for the current user."""
+    if not supabase.client:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+    
+    try:
+        child_record = {
+            "parent_id": current_user.id,
+            "name": child_data["name"],
+            "date_of_birth": child_data.get("date_of_birth"),
+            "notes": child_data.get("notes")
+        }
+        
+        response = supabase.client.table("children").insert(child_record).execute()
+        
+        if not response.data:
+            raise HTTPException(status_code=500, detail="Failed to create child profile")
+        
+        return Child(**response.data[0])
+    except Exception as e:
+        logger.error(f"Error creating child: {e}")
+        raise HTTPException(status_code=500, detail=f"Error creating child profile: {str(e)}")
+
+
+@router.get("/children", response_model=list[Child])
+async def get_children(
+    current_user: User = Depends(get_current_user),
+    supabase: SupabaseService = Depends(get_supabase_service)
+):
+    """Get all children for the current user."""
+    if not supabase.client:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+    
+    try:
+        response = supabase.client.table("children").select("*").eq("parent_id", current_user.id).execute()
+        return [Child(**child) for child in response.data] if response.data else []
+    except Exception as e:
+        logger.error(f"Error fetching children: {e}")
+        raise HTTPException(status_code=500, detail="Error fetching children")
+
+
+@router.delete("/children/{child_id}")
+async def delete_child(
+    child_id: str,
+    current_user: User = Depends(get_current_user),
+    supabase: SupabaseService = Depends(get_supabase_service)
+):
+    """Delete a child profile."""
+    if not supabase.client:
+        raise HTTPException(status_code=500, detail="Supabase not configured")
+    
+    try:
+        # Verify ownership
+        response = supabase.client.table("children").select("parent_id").eq("id", child_id).execute()
+        if not response.data or response.data[0]["parent_id"] != current_user.id:
+            raise HTTPException(status_code=403, detail="Not authorized to delete this child")
+        
+        supabase.client.table("children").delete().eq("id", child_id).execute()
+        return {"message": "Child profile deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting child: {e}")
+        raise HTTPException(status_code=500, detail="Error deleting child profile")

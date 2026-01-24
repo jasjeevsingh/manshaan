@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from enum import Enum
-from typing import Optional
+from typing import Optional, Union
 from datetime import datetime
 import uuid
 
@@ -36,7 +36,7 @@ class AssessmentResponse(BaseModel):
     """Request to submit a response to an item."""
     session_id: str
     item_id: str
-    response: int | str  # MCQ index or transcript/base64
+    response: Union[int, str]  # MCQ index or transcript/base64
     response_time_ms: int = Field(..., ge=0)
 
 
@@ -64,7 +64,7 @@ class DomainScore(BaseModel):
 class ClinicalMarker(BaseModel):
     """Individual clinical marker from assessment."""
     name: str
-    value: float | str
+    value: Union[float, str]
     significance: str  # "typical", "atypical", "concerning"
     evidence_source: str  # "irt", "voice", "drawing"
 

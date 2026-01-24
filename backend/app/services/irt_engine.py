@@ -14,7 +14,7 @@ import numpy as np
 from scipy import integrate
 from scipy.stats import norm
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 import logging
 
 from ..models.irt import (
@@ -311,7 +311,7 @@ class IRTEngine:
         self,
         session_state: SessionState,
         item_id: str,
-        response: int | str,
+        response: Union[int, str],
         response_time_ms: int
     ) -> SessionState:
         """

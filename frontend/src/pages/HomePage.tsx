@@ -91,7 +91,7 @@ const HomePage: React.FC = () => {
                         { name: 'Processing Speed', icon: '⏱️' },
                         { name: 'Visuospatial Skills', icon: '👁️' },
                     ].map((domain) => (
-                        <div key={domain.name} className="bg-card px-lg py-md rounded-full shadow-sm border flex items-center gap-sm">
+                        <div key={domain.name} className="bg-card px-lg py-md rounded-full shadow-sm border flex items-center gap-sm" style={{ whiteSpace: 'nowrap' }}>
                             <span className="text-xl">{domain.icon}</span>
                             <span className="text-sm font-medium">{domain.name}</span>
                         </div>

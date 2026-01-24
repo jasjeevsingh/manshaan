@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from enum import Enum
-from typing import Optional
+from typing import Optional, Union
 from datetime import datetime
 import uuid
 
@@ -82,7 +82,7 @@ class ResponseRecord(BaseModel):
     """Record of a single item response."""
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     item_id: str
-    response: int | str | None  # MCQ index, voice transcript, or drawing base64
+    response: Union[int, str, None]  # MCQ index, voice transcript, or drawing base64
     response_time_ms: int = Field(..., ge=0)
     is_correct: Optional[bool] = None
     timestamp: datetime = Field(default_factory=datetime.utcnow)
