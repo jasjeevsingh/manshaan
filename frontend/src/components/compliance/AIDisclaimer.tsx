@@ -14,7 +14,7 @@ interface AIDisclaimerProps {
 
 export const AIDisclaimer: React.FC<AIDisclaimerProps> = ({
     phoneNumber = '1-800-MANSHAAN',
-    variant = 'banner',
+    variant: _variant = 'banner',
 }) => {
     const WarningIcon = () => (
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
