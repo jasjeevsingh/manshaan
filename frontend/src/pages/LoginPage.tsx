@@ -10,12 +10,15 @@ import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import logoImage from '../logo/WhatsApp Image 2026-01-24 at 12.04.53.jpeg';
 
+import { useAuthStore } from '../stores/authStore';
+
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const { setSession, setUser } = useAuthStore();
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,13 +26,24 @@ const LoginPage: React.FC = () => {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
+
       if (error) throw error;
+
+      if (data.session) {
+        setSession(data.session);
+        setUser(data.user);
+        console.log('Login success - session set manually');
+      } else {
+        console.warn('Login success but no session returned');
+      }
+
       navigate('/');
     } catch (err: any) {
+      console.error('Login error:', err);
       setError(err.message || 'Failed to sign in');
     } finally {
       setLoading(false);
@@ -54,7 +68,7 @@ const LoginPage: React.FC = () => {
 
   return (
     <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2" style={{ background: 'linear-gradient(135deg, #eef2ff, #f5f3ff, #fff7ed)' }}>
-      
+
       {/* LEFT — LOGIN FORM */}
       <div className="flex items-center justify-center px-8">
         <div className="w-full max-w-md">

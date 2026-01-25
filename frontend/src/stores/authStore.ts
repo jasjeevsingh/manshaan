@@ -100,16 +100,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     },
 
     initialize: async () => {
+        // Set up listener first so we don't miss anything
         try {
-            // Get initial session
-            const { data: { session } } = await supabase.auth.getSession();
-
-            if (session) {
-                set({ session, user: session.user });
-                await get().fetchChildren();
-            }
-
-            // Listen for auth changes
             supabase.auth.onAuthStateChange(async (_event, session) => {
                 set({ session, user: session?.user || null });
 
@@ -119,10 +111,25 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                     set({ children: [] });
                 }
             });
+        } catch (e) {
+            console.error('Failed to set up auth listener:', e);
+        }
 
-            set({ initialized: true, loading: false });
-        } catch (error) {
-            console.error('Error initializing auth:', error);
+        try {
+            // Get initial session
+            const { data: { session }, error } = await supabase.auth.getSession();
+            if (error) throw error;
+
+            if (session) {
+                set({ session, user: session.user });
+                await get().fetchChildren();
+            }
+        } catch (error: any) {
+            // Ignore AbortError which happens frequently in dev (strict mode)
+            if (error.name !== 'AbortError') {
+                console.error('Error getting initial session:', error);
+            }
+        } finally {
             set({ initialized: true, loading: false });
         }
     },
