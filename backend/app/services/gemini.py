@@ -31,7 +31,8 @@ class GeminiService:
         """Initialize Gemini client."""
         settings = get_settings()
         genai.configure(api_key=settings.google_api_key)
-        self.model = genai.GenerativeModel('gemini-1.5-pro')
+        # Use gemini-2.5-flash - strong for reasoning and analysis
+        self.model = genai.GenerativeModel('gemini-2.5-flash')
     
     async def generate_adaptive_question(
         self,
@@ -126,106 +127,196 @@ Respond only with the question/prompt itself, no explanations."""
             for d, t in theta_estimates.items()
         ])
         
-        markers_text = "\n".join([
-            f"- {m.name}: {m.value} ({m.significance})"
-            for m in clinical_markers
-        ]) if clinical_markers else "No additional markers"
+        # Build multimodal evidence section
+        markers_text = ""
+        if clinical_markers:
+            markers_text = "\n".join([
+                f"- {m.name}: {m.value} ({m.significance}) [Source: {m.evidence_source}]"
+                for m in clinical_markers
+            ])
+        else:
+            markers_text = "No drawing analysis markers available for this session."
         
+        # Build emotion data section with specific Hume AI citations
         emotion_text = ""
-        if emotion_data:
+        if emotion_data and emotion_data.timeline:
             emotion_text = f"""
-Emotional Data:
-- Average anxiety: {emotion_data.avg_anxiety:.2f}
-- Average calm: {emotion_data.avg_calm:.2f}
-- Average distress: {emotion_data.avg_distress:.2f}
-- Resilience score: {emotion_data.emotional_resilience_score or 'N/A'}
-"""
+HUME AI Voice Paralinguistics Analysis:
+- Average Anxiety Level: {emotion_data.avg_anxiety:.2%} (0-100% scale)
+- Average Calm Level: {emotion_data.avg_calm:.2%}
+- Average Distress Level: {emotion_data.avg_distress:.2%}
+- Emotional Resilience Score: {emotion_data.emotional_resilience_score:.1f}/100
+- Peak Anxiety Item: {emotion_data.peak_anxiety_item or 'N/A'}
+- Data Points Collected: {len(emotion_data.timeline)}
+
+Note: Hume AI analyzes voice paralinguistics (tone, pitch, prosody) to detect emotional states in real-time."""
+        else:
+            emotion_text = "\nHume AI Voice Analysis: No voice emotion data collected for this session."
         
         return f"""You are a clinical neuropsychologist analyzing assessment results for 
-a neurodevelopmental screening. Generate a differential insight report.
+a neurodevelopmental screening. Generate a comprehensive differential insight report.
 
 IMPORTANT: This is a Clinical Insight Report, NOT a diagnosis.
 
-Cognitive Domain Scores (IRT θ scale, mean=0, SD=1):
+=== COGNITIVE DOMAIN SCORES (IRT θ scale, mean=0, SD=1) ===
 {theta_text}
 
-Clinical Markers:
+=== GPT-4 VISION DRAWING ANALYSIS ===
 {markers_text}
+
 {emotion_text}
 
-Based on these results, provide:
+=== ADMINISTRATION DETAILS ===
+- Assessment administered via adaptive IRT algorithm
+- CPT Code 96146 applicable (Psychological testing, automated)
+- Session qualifies for reimbursement under automated psychological testing
+
+Based on ALL available multimodal evidence, provide:
 
 1. PRIMARY PATTERN: A 1-sentence summary of the overall cognitive profile
 
-2. ASD INDICATORS: List any patterns consistent with Autism Spectrum features:
+2. ASD INDICATORS: List patterns consistent with Autism Spectrum features:
    - Uneven cognitive profile (peaks and valleys)
    - Processing speed/executive function patterns
-   - Social-emotional markers if available
+   - Social-emotional markers from Hume AI voice analysis (if available)
+   - Drawing/visual-motor markers from GPT-4 Vision (if available)
 
-3. ID INDICATORS: List any patterns consistent with Intellectual Disability features:
+3. ID INDICATORS: List patterns consistent with Intellectual Disability features:
    - Globally lowered scores
    - Consistent across domains
    - Processing speed proportional to other domains
 
 4. DIFFERENTIAL CONFIDENCE: Rate 0.0-1.0 how confident the profile distinction is
 
-5. CLINICAL NOTES: Brief observations and recommendations
+5. CLINICAL NOTES: Brief observations incorporating multimodal evidence
 
-6. EVIDENCE SUMMARY: List the key data points supporting your interpretation
+6. EVIDENCE SUMMARY: List ALL key data points from:
+   - IRT cognitive scores
+   - Hume AI voice emotion analysis (cite specific findings)
+   - GPT-4 Vision drawing analysis (cite specific findings)
+
+7. RECOMMENDED NEXT STEPS: Provide 3-5 actionable recommendations such as:
+   - Specific specialist referrals (e.g., Speech-Language Pathologist, Occupational Therapist)
+   - IEP/504 accommodation suggestions
+   - Follow-up testing recommendations
+   - Home/school intervention strategies
 
 Format your response with clear section headers."""
     
     def _parse_differential_response(self, text: str) -> DifferentialInsight:
         """Parse Gemini response into DifferentialInsight."""
-        # Extract sections from response
+        import re
+        
+        # More flexible section extraction - handle Gemini's markdown format
         sections = {}
         current_section = ""
         current_content = []
         
         for line in text.split("\n"):
-            line = line.strip()
-            if line.startswith("#") or line.endswith(":"):
+            stripped = line.strip()
+            # Match headers like "**1. PRIMARY PATTERN:**", "### 1. PRIMARY PATTERN:", etc.
+            # Also match plain headers like "PRIMARY PATTERN:" or "1. PRIMARY PATTERN:"
+            header_match = re.match(r'^\*?\*?#{0,4}\s*(\d*\.?\s*[A-Z][A-Z\s]+)[:*]*$', stripped, re.IGNORECASE)
+            if header_match or (stripped.endswith(":") and len(stripped) < 50 and stripped.isupper()):
+                # Save previous section
                 if current_section and current_content:
-                    sections[current_section.lower()] = "\n".join(current_content)
-                current_section = line.strip("#: ").lower()
+                    sections[current_section] = "\n".join(current_content)
+                # Start new section
+                if header_match:
+                    current_section = header_match.group(1).strip().lower()
+                    # Remove numbering like "1. " from section name
+                    current_section = re.sub(r'^\d+\.\s*', '', current_section)
+                else:
+                    current_section = stripped.rstrip(":").strip().lower()
                 current_content = []
             else:
                 current_content.append(line)
         
+        # Save last section
         if current_section and current_content:
-            sections[current_section.lower()] = "\n".join(current_content)
+            sections[current_section] = "\n".join(current_content)
         
-        # Extract ASD indicators as list
-        asd_text = sections.get("asd indicators", "")
+        # Log extracted sections for debugging
+        logger.info(f"Parsed sections: {list(sections.keys())}")
+        
+        # Extract primary pattern - try multiple possible keys
+        primary = (
+            sections.get("primary pattern") or 
+            sections.get("1. primary pattern") or
+            sections.get("primary_pattern") or
+            "Profile analysis pending"
+        ).strip()
+        
+        # Extract ASD indicators - handle * and - bullet points
+        asd_text = (
+            sections.get("asd indicators") or 
+            sections.get("2. asd indicators") or
+            ""
+        )
         asd_indicators = [
-            line.strip("- •").strip() 
+            line.lstrip("*- •").strip() 
             for line in asd_text.split("\n") 
-            if line.strip().startswith(("-", "•"))
+            if line.strip().startswith(("*", "-", "•")) and len(line.strip()) > 2
         ]
         
-        # Extract ID indicators as list
-        id_text = sections.get("id indicators", "")
+        # Extract ID indicators
+        id_text = (
+            sections.get("id indicators") or 
+            sections.get("3. id indicators") or
+            ""
+        )
         id_indicators = [
-            line.strip("- •").strip() 
+            line.lstrip("*- •").strip() 
             for line in id_text.split("\n") 
-            if line.strip().startswith(("-", "•"))
+            if line.strip().startswith(("*", "-", "•")) and len(line.strip()) > 2
         ]
         
         # Extract confidence
         confidence = 0.5
-        conf_text = sections.get("differential confidence", "0.5")
-        import re
-        conf_match = re.search(r"(\d\.\d+|\d)", conf_text)
+        conf_text = (
+            sections.get("differential confidence") or 
+            sections.get("4. differential confidence") or
+            "0.5"
+        )
+        conf_match = re.search(r'(\d\.?\d*)', conf_text)
         if conf_match:
             confidence = min(1.0, float(conf_match.group(1)))
         
+        # Extract clinical notes
+        clinical_notes = (
+            sections.get("clinical notes") or 
+            sections.get("5. clinical notes") or
+            ""
+        ).strip()
+        
+        # Evidence summary - use full text if section not found
+        evidence = (
+            sections.get("evidence summary") or 
+            sections.get("6. evidence summary") or
+            text  # Use full response as evidence
+        ).strip()
+        
+        # Extract recommendations (new section 7)
+        rec_text = (
+            sections.get("recommended next steps") or 
+            sections.get("7. recommended next steps") or
+            sections.get("recommendations") or
+            ""
+        )
+        recommendations = [
+            line.lstrip("*- •1234567890.").strip() 
+            for line in rec_text.split("\n") 
+            if line.strip().startswith(("*", "-", "•", "1", "2", "3", "4", "5")) and len(line.strip()) > 5
+        ]
+        
         return DifferentialInsight(
-            primary_pattern=sections.get("primary pattern", "Profile analysis pending"),
-            asd_indicators=asd_indicators or ["Insufficient data for ASD indicators"],
-            id_indicators=id_indicators or ["Insufficient data for ID indicators"],
+            primary_pattern=primary if primary else "Profile analysis pending",
+            asd_indicators=asd_indicators if asd_indicators else ["Insufficient data for ASD indicators"],
+            id_indicators=id_indicators if id_indicators else ["Insufficient data for ID indicators"],
             differential_confidence=confidence,
-            clinical_notes=sections.get("clinical notes", ""),
-            evidence_summary=sections.get("evidence summary", text[:500])
+            clinical_notes=clinical_notes,
+            evidence_summary=evidence,
+            recommendations=recommendations if recommendations else ["Complete full assessment for personalized recommendations"]
         )
     
     def _default_differential(self) -> DifferentialInsight:
@@ -236,7 +327,8 @@ Format your response with clear section headers."""
             id_indicators=["Analysis unavailable"],
             differential_confidence=0.0,
             clinical_notes="An error occurred during interpretation. Please review raw data.",
-            evidence_summary="Error in Gemini API call"
+            evidence_summary="Error in Gemini API call",
+            recommendations=["Retry assessment or consult support"]
         )
     
     async def generate_clinical_report(

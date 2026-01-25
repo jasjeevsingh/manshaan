@@ -8,7 +8,7 @@ import React, { useState, useCallback } from 'react';
 import { useAssessmentStore } from '../stores/assessmentStore';
 import { assessmentService } from '../services/api';
 import { AIDisclaimer } from '../components/compliance/AIDisclaimer';
-import { VoiceModal } from '../components/assessment/VoiceModal';
+import { VoiceAssessment } from '../components/assessment/VoiceAssessment';
 import { DrawingCanvas } from '../components/assessment/DrawingCanvas';
 import { SessionStatus } from '../types';
 import type { IRTItem } from '../types';
@@ -36,7 +36,7 @@ const AssessmentPage: React.FC = () => {
 
     // const [patientId, setPatientId] = useState(''); // Commented out - no longer needed
     const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
-    const [showVoiceModal, setShowVoiceModal] = useState(false);
+    const [isVoiceActive, setIsVoiceActive] = useState(false);
     const [showDrawingCanvas, setShowDrawingCanvas] = useState(false);
 
     // Start new session
@@ -100,7 +100,7 @@ const AssessmentPage: React.FC = () => {
 
     // Handle voice completion
     const handleVoiceComplete = (transcript: string) => {
-        setShowVoiceModal(false);
+        setIsVoiceActive(false);
         handleSubmitResponse(transcript);
     };
 
@@ -122,12 +122,21 @@ const AssessmentPage: React.FC = () => {
                         {currentItem.instructions && (
                             <p className="text-secondary mb-lg">{currentItem.instructions}</p>
                         )}
-                        <button
-                            className="btn btn-accent btn-lg"
-                            onClick={() => setShowVoiceModal(true)}
-                        >
-                            🎤 Talk Now
-                        </button>
+                        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+                            <button
+                                className="btn btn-accent btn-lg"
+                                onClick={() => setIsVoiceActive(true)}
+                            >
+                                🎤 Talk Now
+                            </button>
+                            <button
+                                className="btn btn-secondary"
+                                onClick={() => handleSubmitResponse('[SKIPPED]')}
+                                title="Skip this question (dev only)"
+                            >
+                                ⏭️ Skip
+                            </button>
+                        </div>
                     </div>
                 );
 
@@ -135,12 +144,21 @@ const AssessmentPage: React.FC = () => {
                 return (
                     <div>
                         <p className="text-lg mb-lg text-center">{currentItem.prompt}</p>
-                        <button
-                            className="btn btn-accent btn-lg mx-auto block"
-                            onClick={() => setShowDrawingCanvas(true)}
-                        >
-                            ✏️ Open Drawing Canvas
-                        </button>
+                        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+                            <button
+                                className="btn btn-accent btn-lg"
+                                onClick={() => setShowDrawingCanvas(true)}
+                            >
+                                ✏️ Open Drawing Canvas
+                            </button>
+                            <button
+                                className="btn btn-secondary"
+                                onClick={() => handleSubmitResponse('[SKIPPED]')}
+                                title="Skip this question (dev only)"
+                            >
+                                ⏭️ Skip
+                            </button>
+                        </div>
                     </div>
                 );
 
@@ -168,13 +186,22 @@ const AssessmentPage: React.FC = () => {
                                 ))}
                             </div>
                         )}
-                        <button
-                            className="btn btn-primary btn-lg mt-lg w-full"
-                            disabled={selectedAnswer === null || isLoading}
-                            onClick={() => selectedAnswer !== null && handleSubmitResponse(selectedAnswer)}
-                        >
-                            {isLoading ? 'Submitting...' : 'Submit Answer'}
-                        </button>
+                        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '16px' }}>
+                            <button
+                                className="btn btn-primary btn-lg"
+                                disabled={selectedAnswer === null || isLoading}
+                                onClick={() => selectedAnswer !== null && handleSubmitResponse(selectedAnswer)}
+                            >
+                                {isLoading ? 'Submitting...' : 'Submit Answer'}
+                            </button>
+                            <button
+                                className="btn btn-secondary"
+                                onClick={() => handleSubmitResponse('[SKIPPED]')}
+                                title="Skip this question (dev only)"
+                            >
+                                ⏭️ Skip
+                            </button>
+                        </div>
                     </div>
                 );
         }
@@ -293,13 +320,13 @@ const AssessmentPage: React.FC = () => {
                 </div>
             </div>
 
-            {/* Voice Modal */}
-            <VoiceModal
-                isOpen={showVoiceModal}
-                onClose={() => setShowVoiceModal(false)}
-                onComplete={handleVoiceComplete}
-                prompt={currentItem?.prompt}
-                instructions={currentItem?.instructions}
+            {/* Voice Assessment - Persistent Connection */}
+            <VoiceAssessment
+                sessionId={sessionId}
+                currentQuestion={currentItem?.prompt}
+                isListening={isVoiceActive}
+                onTranscriptReady={handleVoiceComplete}
+                onStopListening={() => setIsVoiceActive(false)}
             />
 
             {/* Drawing Canvas Modal */}

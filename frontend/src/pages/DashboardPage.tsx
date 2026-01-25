@@ -185,6 +185,20 @@ const DashboardPage: React.FC = () => {
                                 <p className="text-sm text-secondary">{report.differential.clinical_notes}</p>
                             </div>
                         )}
+
+                        {/* Recommendations Section */}
+                        {report.differential.recommendations && report.differential.recommendations.length > 0 && (
+                            <div className="mt-md p-md bg-success-light rounded-lg" style={{ backgroundColor: '#e6f7e6', border: '1px solid #52c41a' }}>
+                                <p className="text-sm font-medium mb-sm" style={{ color: '#389e0d' }}>
+                                    📋 Recommended Next Steps
+                                </p>
+                                <ul className="text-sm text-secondary">
+                                    {report.differential.recommendations.map((rec: string, i: number) => (
+                                        <li key={i} className="mb-xs">✓ {rec}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

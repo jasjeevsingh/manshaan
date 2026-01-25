@@ -76,6 +76,25 @@ class PDFGenerator:
             fontName='Courier'
         ))
     
+    def _clean_markdown(self, text: str) -> str:
+        """Remove markdown formatting artifacts from text."""
+        import re
+        # Remove bold/italic markers
+        text = re.sub(r'\*\*([^*]+)\*\*', r'\1', text)  # **bold**
+        text = re.sub(r'\*([^*]+)\*', r'\1', text)      # *italic*
+        text = re.sub(r'__([^_]+)__', r'\1', text)      # __bold__
+        text = re.sub(r'_([^_]+)_', r'\1', text)        # _italic_
+        # Remove markdown headers
+        text = re.sub(r'^#{1,6}\s+', '', text, flags=re.MULTILINE)
+        return text.strip()
+    
+    def _escape_html(self, text: str) -> str:
+        """Escape HTML special characters for PDF."""
+        text = text.replace('&', '&amp;')
+        text = text.replace('<', '&lt;')
+        text = text.replace('>', '&gt;')
+        return text
+    
     def generate_report(
         self,
         report: ClinicalInsightReport,
@@ -184,19 +203,19 @@ class PDFGenerator:
         ))
         story.append(Spacer(1, 8))
         
-        # ASD Indicators
+        # ASD Indicators - strip markdown artifacts
         story.append(Paragraph("<b>ASD-Consistent Indicators:</b>", self.styles['Normal']))
         asd_items = [
-            ListItem(Paragraph(ind, self.styles['Normal']))
+            ListItem(Paragraph(self._clean_markdown(ind), self.styles['Normal']))
             for ind in report.differential.asd_indicators
         ]
         story.append(ListFlowable(asd_items, bulletType='bullet'))
         story.append(Spacer(1, 6))
         
-        # ID Indicators
+        # ID Indicators - strip markdown artifacts
         story.append(Paragraph("<b>ID-Consistent Indicators:</b>", self.styles['Normal']))
         id_items = [
-            ListItem(Paragraph(ind, self.styles['Normal']))
+            ListItem(Paragraph(self._clean_markdown(ind), self.styles['Normal']))
             for ind in report.differential.id_indicators
         ]
         story.append(ListFlowable(id_items, bulletType='bullet'))
@@ -214,10 +233,42 @@ class PDFGenerator:
         if report.differential.clinical_notes:
             story.append(Paragraph("<b>Clinical Notes:</b>", self.styles['Normal']))
             story.append(Paragraph(
-                report.differential.clinical_notes,
+                self._clean_markdown(report.differential.clinical_notes),
                 self.styles['Normal']
             ))
         story.append(Spacer(1, 16))
+        
+        # Recommended Next Steps Section (NEW)
+        story.append(Paragraph("Recommended Next Steps", self.styles['SectionHeader']))
+        if report.differential.recommendations:
+            rec_items = [
+                ListItem(Paragraph(self._clean_markdown(rec), self.styles['Normal']))
+                for rec in report.differential.recommendations
+            ]
+            story.append(ListFlowable(rec_items, bulletType='bullet'))
+        else:
+            story.append(Paragraph(
+                "Complete full assessment for personalized recommendations.",
+                self.styles['Normal']
+            ))
+        story.append(Spacer(1, 16))
+        
+        # CPT Coding & Reimbursement Section (NEW)
+        story.append(Paragraph("Billing & Reimbursement", self.styles['SectionHeader']))
+        story.append(Paragraph(
+            "<b>CPT Code 96146</b> - Psychological or neuropsychological test administration, "
+            "with single automated, standardized instrument via electronic assessment.",
+            self.styles['Normal']
+        ))
+        story.append(Spacer(1, 6))
+        story.append(Paragraph(
+            f"<b>Session Details:</b> {len(report.domain_scores)} cognitive domains assessed via "
+            f"adaptive IRT algorithm. This automated administration qualifies for reimbursement "
+            f"under CPT 96146 for psychological testing using automated instruments.",
+            self.styles['Normal']
+        ))
+        story.append(Spacer(1, 16))
+        
         
         # Evidence Section
         story.append(Paragraph("Evidence & Transparency", self.styles['SectionHeader']))
@@ -229,18 +280,24 @@ class PDFGenerator:
         
         if report.irt_calculation_log:
             story.append(Paragraph("<b>IRT Calculation Log:</b>", self.styles['Normal']))
-            # Format as code block
-            log_lines = report.irt_calculation_log.split("\n")[:15]  # Limit lines
+            # Format as code block - show all lines
+            log_lines = report.irt_calculation_log.split("\n")
             for line in log_lines:
-                story.append(Paragraph(line, self.styles['Evidence']))
+                if line.strip():  # Skip empty lines
+                    story.append(Paragraph(self._escape_html(line), self.styles['Evidence']))
         
         story.append(Spacer(1, 12))
-        story.append(Paragraph(
-            report.differential.evidence_summary[:500] + "..." 
-            if len(report.differential.evidence_summary) > 500 
-            else report.differential.evidence_summary,
-            self.styles['Normal']
-        ))
+        
+        # Evidence summary - clean and format properly
+        if report.differential.evidence_summary:
+            story.append(Paragraph("<b>Clinical Evidence Summary:</b>", self.styles['Normal']))
+            # Clean markdown and format
+            evidence_clean = self._clean_markdown(report.differential.evidence_summary)
+            # Split into paragraphs for better formatting
+            for para in evidence_clean.split("\n\n"):
+                if para.strip():
+                    story.append(Paragraph(self._escape_html(para.strip()), self.styles['Normal']))
+                    story.append(Spacer(1, 6))
         
         # Footer
         story.append(Spacer(1, 24))

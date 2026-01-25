@@ -155,6 +155,7 @@ export interface DifferentialInsight {
     differential_confidence: number;
     clinical_notes: string;
     evidence_summary: string;
+    recommendations?: string[];  // Actionable next steps
 }
 
 export interface ClinicalInsightReport {

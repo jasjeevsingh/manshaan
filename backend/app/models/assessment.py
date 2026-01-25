@@ -80,6 +80,7 @@ class DifferentialInsight(BaseModel):
     differential_confidence: float  # 0-1
     clinical_notes: str
     evidence_summary: str
+    recommendations: list[str] = []  # Actionable next steps
 
 
 class ClinicalInsightReport(BaseModel):
