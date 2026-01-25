@@ -24,7 +24,7 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({
     instructions,
 }) => {
     const configId = import.meta.env.VITE_HUME_CONFIG_ID;
-    const { connect, disconnect, status, messages } = useVoice();
+    const { connect, disconnect, status, messages, sendSessionSettings } = useVoice();
 
     const [transcript, setTranscript] = useState('');
     const [isRecording, setIsRecording] = useState(false);
@@ -120,16 +120,44 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({
         fetchTokenAndConnect();
     }, [isOpen, configId, connect, addLog]);
 
+    // Send question context when connected
+    useEffect(() => {
+        if (status.value === 'connected' && prompt && sendSessionSettings) {
+            addLog(`Sending question context to AI`);
+
+            // Send context as a session setting with custom instruction
+            sendSessionSettings({
+                context: {
+                    text: `TASK FOR USER: "${prompt}"\n\nINSTRUCTIONS: You are a clinical assistant conducting cognitive assessments for neurodevelopmental screening. You are to be warm, kind, welcoming, and patient. The patient will likely be a child or teenager. Read this task aloud to the user clearly, then say "Please begin when you're ready" and wait silently for their response. Do not answer the task yourself.`
+                }
+            });
+        }
+    }, [status.value, prompt, sendSessionSettings, addLog]);
+
+    // Track transcripts from user messages
+    const transcriptRef = useRef('');
+
     // Monitor messages
     useEffect(() => {
         if (messages.length > 0) {
             const lastMessage = messages[messages.length - 1];
-            addLog(`Message received: ${lastMessage.type}`);
 
+            // Only log certain message types to reduce spam
+            if (['chat_metadata', 'user_message', 'assistant_message', 'assistant_end', 'session_settings'].includes(lastMessage.type)) {
+                addLog(`Message: ${lastMessage.type}`);
+            }
+
+            // For user_message, store the latest transcript (replace, don't append)
+            // Hume sends progressive transcripts, so each message contains the updated version
             if (lastMessage.type === 'user_message' && lastMessage.message?.content) {
                 const content = lastMessage.message.content;
-                addLog(`Transcript: ${content}`);
-                setTranscript(prev => prev + ' ' + content);
+                transcriptRef.current = content;
+                setTranscript(content); // Replace, not append
+            }
+
+            // When assistant ends turn, we know user finished speaking for that segment
+            if (lastMessage.type === 'assistant_end' && transcriptRef.current) {
+                addLog(`Final segment: ${transcriptRef.current}`);
             }
         }
     }, [messages, addLog]);
