@@ -89,6 +89,7 @@ export const useAssessmentStore = create<AssessmentStore>((set) => ({
         responsesCount: 0,
         emotionTimeline: [],
         error: null,
+        isLoading: false,  // Reset loading state as part of session start
     }),
 
     setCurrentItem: (item, startTime) => set({
