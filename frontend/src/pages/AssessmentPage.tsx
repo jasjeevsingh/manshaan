@@ -376,9 +376,9 @@ const AssessmentPage: React.FC = () => {
 
                         {/* <AIDisclaimer /> */}
 
-                        {error && (
+                        {/* {error && (
                             <p className="text-danger text-sm mt-sm">{error}</p>
-                        )}
+                        )} */}
 
                         <button
                             className="btn btn-primary btn-lg w-full mt-lg"
@@ -468,9 +468,9 @@ const AssessmentPage: React.FC = () => {
                     {renderItemUI()}
                 </div>
 
-                <div className="mt-lg">
+                {/* <div className="mt-lg">
                     <AIDisclaimer variant="compact" />
-                </div>
+                </div> */}
             </div>
 
             {/* Voice Assessment - Persistent Connection */}

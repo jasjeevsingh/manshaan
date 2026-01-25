@@ -112,7 +112,7 @@ const SimulationPage: React.FC = () => {
                 </p>
             </div>
 
-            <AIDisclaimer variant="compact" />
+            {/* <AIDisclaimer variant="compact" /> */}
 
             {/* Configuration */}
             <div className="card mt-lg">

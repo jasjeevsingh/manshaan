@@ -126,7 +126,7 @@ const DashboardPage: React.FC = () => {
             </div>
 
             {/* Disclaimer */}
-            <AIDisclaimer />
+            {/* <AIDisclaimer /> */}
 
             {/* Main content grid */}
             <div className="grid gap-lg mt-xl" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))' }}>

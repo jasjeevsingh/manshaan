@@ -294,9 +294,9 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({
                 </div>
 
                 {/* Disclaimer */}
-                <div className="mt-md">
+                {/* <div className="mt-md">
                     <AIDisclaimer variant="compact" />
-                </div>
+                </div> */}
             </div>
         </div>
     );

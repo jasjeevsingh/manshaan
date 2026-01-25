@@ -226,7 +226,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                 )}
             </div>
 
-            <div className="card-footer flex justify-between items-center">
+            {/* <div className="card-footer flex justify-between items-center">
                 <AIDisclaimer variant="compact" />
 
                 <div className="flex gap-sm">
@@ -250,7 +250,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                         )}
                     </button>
                 </div>
-            </div>
+            </div> */}
         </div>
     );
 };
