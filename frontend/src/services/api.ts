@@ -18,8 +18,11 @@ import type {
     HelpRequest,
 } from '../types';
 
+// Use VITE_API_URL as the primary env var, fallback to /api for local proxy
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
+    baseURL: API_BASE_URL,
     headers: {
         'Content-Type': 'application/json',
     },
@@ -62,46 +65,46 @@ export const authService = {
 
 export const assessmentService = {
     async startSession(request: StartAssessmentRequest) {
-        const response = await api.post<{ session_id: string; first_item: object }>(`${import.meta.env.VITE_API_BASE_URL}/assessment/start`, request);
+        const response = await api.post<{ session_id: string; first_item: object }>('/assessment/start', request);
         return response.data;
     },
 
     async submitResponse(response: AssessmentResponse): Promise<NextItemResponse> {
-        const res = await api.post<NextItemResponse>(`${import.meta.env.VITE_API_BASE_URL}/assessment/respond`, response);
+        const res = await api.post<NextItemResponse>('/assessment/respond', response);
         return res.data;
     },
 
     async requestHelp(request: HelpRequest): Promise<NextItemResponse> {
-        const res = await api.post<NextItemResponse>(`${import.meta.env.VITE_API_BASE_URL}/assessment/request-help`, request);
+        const res = await api.post<NextItemResponse>('/assessment/request-help', request);
         return res.data;
     },
 
     async getSession(sessionId: string) {
-        const response = await api.get(`${import.meta.env.VITE_API_BASE_URL}/assessment/${sessionId}`);
+        const response = await api.get(`/assessment/${sessionId}`);
         return response.data;
     },
 
     async getResults(sessionId: string): Promise<ClinicalInsightReport> {
-        const response = await api.get<ClinicalInsightReport>(`${import.meta.env.VITE_API_BASE_URL}/assessment/${sessionId}/results`);
+        const response = await api.get<ClinicalInsightReport>(`/assessment/${sessionId}/results`);
         return response.data;
     },
 
     async getResultsPdf(sessionId: string): Promise<Blob> {
-        const response = await api.get(`${import.meta.env.VITE_API_BASE_URL}/assessment/${sessionId}/results/pdf`, {
+        const response = await api.get(`/assessment/${sessionId}/results/pdf`, {
             responseType: 'blob',
         });
         return response.data;
     },
 
     async runSimulation(trueTheta: Record<string, number>, numItems = 20): Promise<SimulationResult> {
-        const response = await api.post<SimulationResult>(`${import.meta.env.VITE_API_BASE_URL}/assessment/simulate`, null, {
+        const response = await api.post<SimulationResult>('/assessment/simulate', null, {
             params: { true_theta: trueTheta, num_items: numItems },
         });
         return response.data;
     },
 
     async invalidateResponse(sessionId: string, responseId: string, reason: string, clinicianId: string) {
-        const response = await api.post(`${import.meta.env.VITE_API_BASE_URL}/assessment/${sessionId}/invalidate/${responseId}`, null, {
+        const response = await api.post(`/assessment/${sessionId}/invalidate/${responseId}`, null, {
             params: { reason, clinician_id: clinicianId },
         });
         return response.data;
