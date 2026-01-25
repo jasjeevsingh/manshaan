@@ -12,7 +12,7 @@ import { EmotionTimeline } from '../components/dashboard/EmotionTimeline';
 import { EvidenceDropdown } from '../components/dashboard/EvidenceDropdown';
 // import { ClinicianOverride } from '../components/dashboard/ClinicianOverride';
 import { PDFExport } from '../components/dashboard/PDFExport';
-import { AIDisclaimer } from '../components/compliance/AIDisclaimer';
+// import { AIDisclaimer } from '../components/compliance/AIDisclaimer';
 import type { ClinicalInsightReport, EmotionTimeline as EmotionTimelineType } from '../types';
 
 const DashboardPage: React.FC = () => {

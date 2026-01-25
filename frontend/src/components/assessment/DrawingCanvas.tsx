@@ -6,9 +6,7 @@
  */
 
 import React, { useRef, useState, useCallback, useEffect } from 'react';
-import { visionService } from '../../services/api';
-import AIDisclaimer from '../compliance/AIDisclaimer';
-
+// import { visionService } from '../../services/api';
 interface DrawingCanvasProps {
     prompt?: string;
     onSubmit?: (analysis: unknown) => void;
@@ -20,17 +18,17 @@ interface DrawingCanvasProps {
 
 export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     prompt,
-    onSubmit,
-    onCancel,
-    sessionId,
-    itemId,
-    taskType = 'free_draw',
+    onSubmit: _onSubmit,
+    onCancel: _onCancel,
+    sessionId: _sessionId,
+    itemId: _itemId,
+    taskType: _taskType = 'free_draw',
 }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [isDrawing, setIsDrawing] = useState(false);
     const [brushColor, setBrushColor] = useState('#1a365d');
     const [brushSize, setBrushSize] = useState(3);
-    const [isAnalyzing, setIsAnalyzing] = useState(false);
+    // const [isAnalyzing, setIsAnalyzing] = useState(false); // Removed unused
     const [analysisResult, setAnalysisResult] = useState<unknown>(null);
 
     // Initialize canvas
@@ -110,34 +108,34 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         setAnalysisResult(null);
     }, []);
 
-    const handleSubmit = useCallback(async () => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
+    // const handleSubmit = useCallback(async () => {
+    //     const canvas = canvasRef.current;
+    //     if (!canvas) return;
 
-        setIsAnalyzing(true);
+    //     setIsAnalyzing(true);
 
-        try {
-            // Get base64 image
-            const dataUrl = canvas.toDataURL('image/png');
-            const base64 = dataUrl.split(',')[1];
+    //     try {
+    //         // Get base64 image
+    //         const dataUrl = canvas.toDataURL('image/png');
+    //         const base64 = dataUrl.split(',')[1];
 
-            // Call vision API
-            const result = await visionService.analyzeDrawing({
-                image_base64: base64,
-                task_type: taskType,
-                session_id: sessionId,
-                item_id: itemId,
-            });
+    //         // Call vision API
+    //         const result = await visionService.analyzeDrawing({
+    //             image_base64: base64,
+    //             task_type: taskType,
+    //             session_id: sessionId,
+    //             item_id: itemId,
+    //         });
 
-            setAnalysisResult(result);
-            onSubmit?.(result);
-        } catch (error) {
-            console.error('Vision analysis error:', error);
-            setAnalysisResult({ error: 'Analysis failed' });
-        } finally {
-            setIsAnalyzing(false);
-        }
-    }, [taskType, sessionId, itemId, onSubmit]);
+    //         setAnalysisResult(result);
+    //         onSubmit?.(result);
+    //     } catch (error) {
+    //         console.error('Vision analysis error:', error);
+    //         setAnalysisResult({ error: 'Analysis failed' });
+    //     } finally {
+    //         setIsAnalyzing(false);
+    //     }
+    // }, [taskType, sessionId, itemId, onSubmit]);
 
     const colors = ['#1a365d', '#e53e3e', '#38a169', '#d69e2e', '#805ad5'];
     const sizes = [2, 3, 5, 8];

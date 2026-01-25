@@ -17,7 +17,7 @@ import {
     ResponsiveContainer,
     ReferenceLine,
 } from 'recharts';
-import { AIDisclaimer } from '../components/compliance/AIDisclaimer';
+// import { AIDisclaimer } from '../components/compliance/AIDisclaimer';
 import type { SimulationResult, Domain } from '../types';
 
 const domainColors: Record<string, string> = {

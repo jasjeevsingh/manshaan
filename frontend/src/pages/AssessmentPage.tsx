@@ -12,7 +12,7 @@
 import React, { useState, useCallback } from 'react';
 import { useAssessmentStore } from '../stores/assessmentStore';
 import { assessmentService } from '../services/api';
-import { AIDisclaimer } from '../components/compliance/AIDisclaimer';
+// import { AIDisclaimer } from '../components/compliance/AIDisclaimer';
 import { VoiceAssessment } from '../components/assessment/VoiceAssessment';
 import { DrawingCanvas } from '../components/assessment/DrawingCanvas';
 import { HelpChatbot } from '../components/assessment/HelpChatbot';

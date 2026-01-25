@@ -6,7 +6,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useVoice } from '@humeai/voice-react';
-import AIDisclaimer from '../compliance/AIDisclaimer';
+// import AIDisclaimer from '../compliance/AIDisclaimer';
 
 interface VoiceModalProps {
     isOpen: boolean;

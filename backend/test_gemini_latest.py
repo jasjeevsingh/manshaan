@@ -4,7 +4,7 @@ Test gemini models.
 import google.generativeai as genai
 
 # Configure with API key
-api_key = "AIzaSyAstTEgqIVSw6wTZOgWu4FURzL46fAhSMo"
+api_key = "oof"
 genai.configure(api_key=api_key)
 
 print("Testing gemini-2.5-pro:")
