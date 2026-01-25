@@ -374,7 +374,7 @@ const AssessmentPage: React.FC = () => {
                             Start New Assessment
                         </h2>
 
-                        <AIDisclaimer />
+                        {/* <AIDisclaimer /> */}
 
                         {error && (
                             <p className="text-danger text-sm mt-sm">{error}</p>
