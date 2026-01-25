@@ -26,10 +26,9 @@ const HomePage: React.FC = () => {
             }}
         >
             <div
-                className="container text-center animate-fade-in"
+                className="fade-in backdrop-blur-sm bg-white/60 p-md rounded-lg text-center"
                 style={{
                     maxWidth: '800px',
-                    background: 'rgba(255, 255, 255, 0.85)',
                     padding: '3rem',
                     borderRadius: '1.5rem',
                     boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
