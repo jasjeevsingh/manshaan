@@ -29,14 +29,14 @@ export const AIDisclaimer: React.FC<AIDisclaimerProps> = ({
         </svg>
     );
 
-    if (variant === 'compact') {
-        return (
-            <div className="flex items-center gap-2 text-xs text-danger">
-                <WarningIcon />
-                <span>AI-generated. Not a diagnosis.</span>
-            </div>
-        );
-    }
+    // if (variant === 'compact') {
+    //     return (
+    //         <div className="flex items-center gap-2 text-xs text-danger">
+    //             <WarningIcon />
+    //             <span>AI-generated. Not a diagnosis.</span>
+    //         </div>
+    //     );
+    // }
 
     if (variant === 'inline') {
         return (
