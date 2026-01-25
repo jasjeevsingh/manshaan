@@ -49,7 +49,7 @@ const AssessmentPage: React.FC = () => {
     const [showHelpChatbot, setShowHelpChatbot] = useState(false);
     const [accommodationApplied, setAccommodationApplied] = useState<string | null>(null);
     const [simplificationLevel, setSimplificationLevel] = useState(0);
-    const [isSimplified, setIsSimplified] = useState(false);
+    const [_isSimplified, setIsSimplified] = useState(false);
 
     // Start new session
     const handleStartSession = async () => {
