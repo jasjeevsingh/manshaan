@@ -41,8 +41,11 @@ const AssessmentPage: React.FC = () => {
 
     // Start new session
     const handleStartSession = async () => {
-        // Prevent double-click
-        if (isLoading) return;
+        // No longer require patient ID - auto-generate from session
+        // if (!patientId.trim()) {
+        //     setError('Please enter a Patient ID');
+        //     return;
+        // }
 
         setLoading(true);
         setError(null);
@@ -50,23 +53,13 @@ const AssessmentPage: React.FC = () => {
         try {
             // Use a timestamp-based ID for now
             const autoPatientId = `patient_${Date.now()}`;
-            console.log('Starting session with patient ID:', autoPatientId);
-
             const result = await assessmentService.startSession({ patient_id: autoPatientId });
-            console.log('Session started:', result);
-
-            if (result && result.session_id && result.first_item) {
-                // startSession also sets isLoading: false internally
-                startSession(result.session_id, autoPatientId, null, result.first_item as IRTItem);
-                console.log('Session state updated, status should now be IN_PROGRESS');
-            } else {
-                throw new Error('Invalid response from server');
-            }
-        } catch (err: any) {
-            const errorMsg = err?.response?.data?.detail || err?.message || 'Failed to start session. Is the backend running?';
-            setError(errorMsg);
-            setLoading(false);  // Only reset loading on error
-            console.error('Session start error:', err);
+            startSession(result.session_id, autoPatientId, null, result.first_item as IRTItem);
+        } catch (err) {
+            setError('Failed to start session. Is the backend running?');
+            console.error(err);
+        } finally {
+            setLoading(false);
         }
     };
 
