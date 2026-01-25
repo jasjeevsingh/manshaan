@@ -1,4 +1,4 @@
-# Manshaan: AI-Powered Neurodevelopmental Assessment Platform
+# Manshaan: AI-Assisted Neurodevelopmental Assessment Platform
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Status](https://img.shields.io/badge/status-research_prototype-orange.svg)
