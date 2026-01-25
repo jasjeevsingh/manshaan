@@ -38,15 +38,15 @@ export const AIDisclaimer: React.FC<AIDisclaimerProps> = ({
     //     );
     // }
 
-    if (variant === 'inline') {
-        return (
-            <p className="text-sm text-danger mt-md">
-                ⚠️ This is an AI-generated Clinical Insight Report. This is NOT a diagnosis.
-                Please consult a licensed healthcare provider at{' '}
-                <strong>{phoneNumber}</strong>.
-            </p>
-        );
-    }
+    // if (variant === 'inline') {
+    //     return (
+    //         <p className="text-sm text-danger mt-md">
+    //             ⚠️ This is an AI-generated Clinical Insight Report. This is NOT a diagnosis.
+    //             Please consult a licensed healthcare provider at{' '}
+    //             <strong>{phoneNumber}</strong>.
+    //         </p>
+    //     );
+    // }
 
     return (
         <div className="disclaimer-banner">
