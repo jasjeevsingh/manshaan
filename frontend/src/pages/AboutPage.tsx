@@ -11,7 +11,7 @@ const AboutPage: React.FC = () => {
     return (
         <div className="container py-2xl">
             {/* Page Header */}
-            <section className="text-center mb-2xl">
+            <section className="text-center mb-2xl" style={{ marginTop: '6rem' }}>
                 <h1 className="text-3xl font-bold mb-md">About Manshaan</h1>
                 <p className="text-lg text-secondary max-w-2xl mx-auto">
                     Learn how our AI-powered platform provides comprehensive neurodevelopmental assessments.
@@ -121,7 +121,11 @@ const AboutPage: React.FC = () => {
 
             {/* CTA */}
             <section className="text-center">
-                <Link to="/assessment" className="btn btn-primary btn-lg transition-all duration-300 hover:scale-105 hover:shadow-lg">
+                <Link
+                    to="/assessment"
+                    className="btn btn-primary btn-lg transition-all duration-300 hover:scale-105 hover:shadow-lg hover:opacity-100"
+                    style={{ color: '#ffffff', opacity: 1 }}
+                >
                     Start Assessment
                 </Link>
             </section>
