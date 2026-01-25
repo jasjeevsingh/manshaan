@@ -49,7 +49,20 @@ const HomePage: React.FC = () => {
                 </p>
 
                 <div className="flex gap-md justify-center">
-                    <Link to="/assessment" className="btn btn-primary btn-lg">
+                    <Link
+                        to="/assessment"
+                        className="btn btn-lg transition-all duration-300"
+                        style={{
+                            background: 'var(--color-primary)',
+                            color: '#ffffff',
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.color = '#000000';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.color = '#ffffff';
+                        }}
+                    >
                         Start Assessment
                     </Link>
                     <Link to="/about" className="btn btn-secondary btn-lg">
