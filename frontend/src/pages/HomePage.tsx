@@ -37,14 +37,14 @@ const HomePage: React.FC = () => {
             >
                 {/* Hero Section */}
                 <h1 className="font-bold mb-lg" style={{ fontSize: '3rem', lineHeight: '1.2', color: '#1e3a5f' }}>
-                    Neurodevelopmental Assessment
+                    Neuro-Diagnostics.
                     <br />
-                    <span style={{ color: 'var(--color-accent)' }}>Powered by AI</span>
+                    <span style={{ color: 'var(--color-accent)' }}>Precise and Modernized.</span>
                 </h1>
 
                 <p className="text-lg mb-xl" style={{ color: '#334155', maxWidth: '600px', margin: '0 auto 2.5rem auto' }}>
                     A multimodal, research-backed diagnostic platform for
-                    Autism Spectrum Disorder (ASD) and Intellectual Disability (ID) screening.
+                    Neurodevelopmental Disorders (NDD), Autism Spectrum Disorder (ASD), Intellectual Disability (ID), and other related conditions.
                 </p>
 
                 <div className="flex gap-md justify-center">
