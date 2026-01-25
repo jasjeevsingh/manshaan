@@ -59,7 +59,8 @@ Use the endpoints below to:
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.allowed_origins,
+    # allow_origins=settings.allowed_origins, # Restricted to localhost by default
+    allow_origin_regex=".*",                # Allows all origins (including Vercel)
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
