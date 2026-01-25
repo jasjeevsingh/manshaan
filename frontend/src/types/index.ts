@@ -130,6 +130,18 @@ export interface NextItemResponse {
     next_item: IRTItem | null;
     session_status: SessionStatus;
     items_remaining?: number;
+    // Adaptive response fields
+    is_simplified?: boolean;
+    simplification_level?: number;
+    accommodation_applied?: string | null;
+}
+
+export interface HelpRequest {
+    session_id: string;
+    message?: string;
+    voice_transcript?: string;
+    hume_emotions?: Record<string, number>;
+    help_button_pressed: boolean;
 }
 
 export interface DomainScore {

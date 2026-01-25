@@ -15,6 +15,7 @@ import type {
     VisionAnalysisResponse,
     EmotionTimeline,
     Token,
+    HelpRequest,
 } from '../types';
 
 const api = axios.create({
@@ -67,6 +68,11 @@ export const assessmentService = {
 
     async submitResponse(response: AssessmentResponse): Promise<NextItemResponse> {
         const res = await api.post<NextItemResponse>('/assessment/respond', response);
+        return res.data;
+    },
+
+    async requestHelp(request: HelpRequest): Promise<NextItemResponse> {
+        const res = await api.post<NextItemResponse>('/assessment/request-help', request);
         return res.data;
     },
 

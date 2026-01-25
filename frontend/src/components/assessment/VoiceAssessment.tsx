@@ -11,6 +11,7 @@ import { useVoice } from '@humeai/voice-react';
 interface VoiceAssessmentProps {
     sessionId: string | null;
     currentQuestion?: string;
+    currentItemId?: string;
     isListening: boolean;
     onTranscriptReady: (transcript: string) => void;
     onStopListening: () => void;
@@ -19,6 +20,7 @@ interface VoiceAssessmentProps {
 export const VoiceAssessment: React.FC<VoiceAssessmentProps> = ({
     sessionId,
     currentQuestion,
+    currentItemId,
     isListening,
     onTranscriptReady,
     onStopListening,
@@ -35,23 +37,25 @@ export const VoiceAssessment: React.FC<VoiceAssessmentProps> = ({
         console.log(`[Hume Voice] ${message}`);
     }, []);
 
-    // Connect once when assessment session starts
+    // Connect only when user clicks "Talk Now" button (isListening becomes true)
     useEffect(() => {
-        if (!sessionId) {
-            // No session, disconnect if connected
+        // If not listening, disconnect if connected
+        if (!isListening) {
             if (hasConnected.current) {
-                log('Assessment ended, disconnecting');
+                log('User stopped listening, disconnecting');
                 disconnect();
                 hasConnected.current = false;
             }
             return;
         }
 
+        // If already connected, don't reconnect
         if (hasConnected.current) {
-            return; // Already connected
+            return;
         }
 
-        log('Assessment started, establishing persistent connection');
+        // User clicked "Talk Now" - establish connection
+        log('User started voice question, establishing connection');
         hasConnected.current = true;
 
         const fetchTokenAndConnect = async () => {
@@ -82,7 +86,7 @@ export const VoiceAssessment: React.FC<VoiceAssessmentProps> = ({
                 }
 
                 await connect(connectOptions);
-                log('Connected to Hume EVI - connection will persist across questions');
+                log('Connected to Hume EVI for voice question');
 
             } catch (error: any) {
                 log(`Connection failed: ${error.message}`);
@@ -91,7 +95,7 @@ export const VoiceAssessment: React.FC<VoiceAssessmentProps> = ({
         };
 
         fetchTokenAndConnect();
-    }, [sessionId, configId, connect, disconnect, log]);
+    }, [isListening, configId, connect, disconnect, log]);
 
     // Send new question context ONLY when user is actively listening
     useEffect(() => {
@@ -107,7 +111,7 @@ export const VoiceAssessment: React.FC<VoiceAssessmentProps> = ({
         }
     }, [status.value, currentQuestion, sendSessionSettings, isListening, log]);
 
-    // Monitor messages and track transcript
+    // Monitor messages and track transcript + emotions
     useEffect(() => {
         if (messages.length > 0) {
             const lastMessage = messages[messages.length - 1];
@@ -116,18 +120,66 @@ export const VoiceAssessment: React.FC<VoiceAssessmentProps> = ({
                 log(`Message: ${lastMessage.type}`);
             }
 
-            // Track user's speech
+            // Track user's speech and emotions
             if (lastMessage.type === 'user_message' && lastMessage.message?.content) {
                 const content = lastMessage.message.content;
                 transcriptRef.current = content;
                 setTranscript(content);
+
+                // Extract emotions from prosody if available
+                log(`Checking for prosody data: models=${!!lastMessage.models}, prosody=${!!lastMessage.models?.prosody}, scores=${!!lastMessage.models?.prosody?.scores}`);
+
+                if (lastMessage.models?.prosody?.scores && sessionId && currentItemId) {
+                    const scores = lastMessage.models.prosody.scores;
+                    log(`Found prosody scores with ${Object.keys(scores).length} emotions`);
+
+                    // Get top 5 emotions
+                    const sortedEmotions = Object.entries(scores)
+                        .sort(([, a], [, b]) => (b as number) - (a as number))
+                        .slice(0, 5);
+
+                    const topEmotions: Record<string, number> = {};
+                    sortedEmotions.forEach(([emotion, score]) => {
+                        topEmotions[emotion] = score as number;
+                    });
+
+                    // Send to emotion API
+                    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+                    fetch(`${apiBaseUrl}/emotion/record`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            session_id: sessionId,
+                            item_id: currentItemId,
+                            emotions: topEmotions,
+                            source: 'hume_voice'
+                        })
+                    }).then(() => {
+                        log(`✓ Emotions recorded successfully`);
+                    }).catch(err => {
+                        console.error('Failed to record emotions:', err);
+                        log(`✗ Failed to record emotions: ${err.message}`);
+                    });
+
+                    log(`Recorded emotions: ${Object.keys(topEmotions).join(', ')}`);
+                } else {
+                    if (!lastMessage.models?.prosody?.scores) {
+                        log('No prosody scores in message');
+                    }
+                    if (!sessionId) {
+                        log('No sessionId available');
+                    }
+                    if (!currentItemId) {
+                        log('No currentItemId available');
+                    }
+                }
             }
 
             if (lastMessage.type === 'assistant_end' && transcriptRef.current) {
                 log(`Final transcript: ${transcriptRef.current}`);
             }
         }
-    }, [messages, log]);
+    }, [messages, sessionId, currentItemId, log]);
 
     // Handle stop listening (submit transcript but keep connection)
     const handleStop = useCallback(() => {

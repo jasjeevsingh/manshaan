@@ -265,6 +265,36 @@ class IRTEngine:
         
         return result
     
+    def get_next_sequential_item(
+        self,
+        session_state: SessionState,
+        max_items: int = 56
+    ) -> Optional[IRTItem]:
+        """
+        Get next item in sequential order from item bank.
+        
+        This is the primary method for the redesigned adaptive engine.
+        Items are presented in the order they appear in item_bank.json.
+        
+        Args:
+            session_state: Current session state
+            max_items: Maximum items per session
+            
+        Returns:
+            Next item in sequence, or None if complete
+        """
+        item_list = list(self.items.values())
+        current_index = session_state.current_item_index
+        
+        if current_index >= len(item_list) or current_index >= max_items:
+            return None
+        
+        return item_list[current_index]
+    
+    def get_item_list(self) -> list[IRTItem]:
+        """Get all items in order."""
+        return list(self.items.values())
+    
     def select_next_item(
         self,
         session_state: SessionState,
@@ -272,6 +302,9 @@ class IRTEngine:
     ) -> Optional[IRTItem]:
         """
         Select optimal next item using Maximum Fisher Information.
+        
+        DEPRECATED: Use get_next_sequential_item() for new adaptive engine.
+        Kept for backwards compatibility with existing tests.
         
         Chooses the unadministered item with highest total information
         at the current θ estimates.

@@ -2,6 +2,11 @@
  * Assessment Page
  * 
  * Main assessment flow with adaptive questioning.
+ * Features:
+ * - Sequential question ordering
+ * - Help button for adaptive simplification
+ * - Text input for accessibility accommodations
+ * - Graduated simplification (up to 3 levels)
  */
 
 import React, { useState, useCallback } from 'react';
@@ -10,6 +15,7 @@ import { assessmentService } from '../services/api';
 import { AIDisclaimer } from '../components/compliance/AIDisclaimer';
 import { VoiceAssessment } from '../components/assessment/VoiceAssessment';
 import { DrawingCanvas } from '../components/assessment/DrawingCanvas';
+import { HelpChatbot } from '../components/assessment/HelpChatbot';
 import { SessionStatus } from '../types';
 import type { IRTItem } from '../types';
 
@@ -34,27 +40,29 @@ const AssessmentPage: React.FC = () => {
         setItemsRemaining,
     } = useAssessmentStore();
 
-    // const [patientId, setPatientId] = useState(''); // Commented out - no longer needed
     const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
     const [isVoiceActive, setIsVoiceActive] = useState(false);
     const [showDrawingCanvas, setShowDrawingCanvas] = useState(false);
 
+    // Help/Accommodation state
+    const [showHelpChatbot, setShowHelpChatbot] = useState(false);
+    const [accommodationApplied, setAccommodationApplied] = useState<string | null>(null);
+    const [simplificationLevel, setSimplificationLevel] = useState(0);
+    const [isSimplified, setIsSimplified] = useState(false);
+
     // Start new session
     const handleStartSession = async () => {
-        // No longer require patient ID - auto-generate from session
-        // if (!patientId.trim()) {
-        //     setError('Please enter a Patient ID');
-        //     return;
-        // }
-
         setLoading(true);
         setError(null);
 
         try {
-            // Use a timestamp-based ID for now
             const autoPatientId = `patient_${Date.now()}`;
             const result = await assessmentService.startSession({ patient_id: autoPatientId });
             startSession(result.session_id, autoPatientId, null, result.first_item as IRTItem);
+            // Reset accommodation state
+            setAccommodationApplied(null);
+            setSimplificationLevel(0);
+            setIsSimplified(false);
         } catch (err) {
             setError('Failed to start session. Is the backend running?');
             console.error(err);
@@ -82,6 +90,13 @@ const AssessmentPage: React.FC = () => {
             updateTheta(result.theta_estimates);
             setItemsRemaining(result.items_remaining ?? null);
 
+            // Track simplification state
+            setIsSimplified(result.is_simplified ?? false);
+            setSimplificationLevel(result.simplification_level ?? 0);
+            if (result.accommodation_applied) {
+                setAccommodationApplied(result.accommodation_applied);
+            }
+
             if (result.session_status === 'complete') {
                 setStatus(SessionStatus.COMPLETE);
                 setCurrentItem(null);
@@ -90,13 +105,61 @@ const AssessmentPage: React.FC = () => {
             }
 
             setSelectedAnswer(null);
-        } catch (err) {
-            setError('Failed to submit response');
+            setShowHelpChatbot(false);
+        } catch (err: any) {
+            // Check if session was lost (404)
+            if (err?.response?.status === 404) {
+                setError('Session expired. Please start a new assessment.');
+                setStatus(SessionStatus.NOT_STARTED);
+            } else {
+                setError('Failed to submit response');
+            }
             console.error(err);
         } finally {
             setLoading(false);
         }
     }, [sessionId, currentItem, itemStartTime, recordResponse, updateTheta, setItemsRemaining, setStatus, setCurrentItem, setLoading, setError]);
+
+    // Request help - triggers adaptive simplification (supports text and voice)
+    const handleRequestHelp = useCallback(async (data: {
+        message?: string;
+        voice_transcript?: string;
+        hume_emotions?: Record<string, number>;
+    }) => {
+        if (!sessionId) return;
+
+        setLoading(true);
+        setError(null);
+
+        try {
+            const result = await assessmentService.requestHelp({
+                session_id: sessionId,
+                message: data.message,
+                voice_transcript: data.voice_transcript,
+                hume_emotions: data.hume_emotions,
+                help_button_pressed: true,
+            });
+
+            // Update state with simplified question
+            if (result.next_item) {
+                setCurrentItem(result.next_item as IRTItem);
+            }
+
+            setIsSimplified(result.is_simplified ?? true);
+            setSimplificationLevel(result.simplification_level ?? 1);
+
+            if (result.accommodation_applied) {
+                setAccommodationApplied(result.accommodation_applied);
+            }
+
+            setShowHelpChatbot(false);
+        } catch (err) {
+            setError('Failed to get help. Please try again.');
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    }, [sessionId, setCurrentItem, setLoading, setError]);
 
     // Handle voice completion
     const handleVoiceComplete = (transcript: string) => {
@@ -109,6 +172,41 @@ const AssessmentPage: React.FC = () => {
         setShowDrawingCanvas(false);
         handleSubmitResponse(JSON.stringify(analysis));
     };
+
+    // Render help section with HelpChatbot
+    const renderHelpSection = () => (
+        <>
+            {/* Need Help button */}
+            {!showHelpChatbot && (
+                <div style={{ marginTop: '24px' }}>
+                    <button
+                        className="btn btn-secondary"
+                        onClick={() => setShowHelpChatbot(true)}
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '10px 16px'
+                        }}
+                    >
+                        ❓ Need Help?
+                    </button>
+                </div>
+            )}
+
+            {/* Help Chatbot */}
+            <HelpChatbot
+                sessionId={sessionId}
+                currentQuestion={currentItem?.prompt}
+                isOpen={showHelpChatbot}
+                onClose={() => setShowHelpChatbot(false)}
+                onHelpSubmit={handleRequestHelp}
+                isLoading={isLoading}
+                accommodationApplied={accommodationApplied}
+                simplificationLevel={simplificationLevel}
+            />
+        </>
+    );
 
     // Render based on item type
     const renderItemUI = () => {
@@ -137,6 +235,7 @@ const AssessmentPage: React.FC = () => {
                                 ⏭️ Skip
                             </button>
                         </div>
+                        {renderHelpSection()}
                     </div>
                 );
 
@@ -159,6 +258,7 @@ const AssessmentPage: React.FC = () => {
                                 ⏭️ Skip
                             </button>
                         </div>
+                        {renderHelpSection()}
                     </div>
                 );
 
@@ -202,6 +302,7 @@ const AssessmentPage: React.FC = () => {
                                 ⏭️ Skip
                             </button>
                         </div>
+                        {renderHelpSection()}
                     </div>
                 );
         }
@@ -218,18 +319,6 @@ const AssessmentPage: React.FC = () => {
                         </h2>
 
                         <AIDisclaimer />
-
-                        {/* Patient ID input - commented out for now */}
-                        {/* <div className="mt-lg">
-                            <label className="label">Patient ID</label>
-                            <input
-                                type="text"
-                                className="input"
-                                placeholder="Enter patient identifier..."
-                                value={patientId}
-                                onChange={(e) => setPatientId(e.target.value)}
-                            />
-                        </div> */}
 
                         {error && (
                             <p className="text-danger text-sm mt-sm">{error}</p>
@@ -260,9 +349,9 @@ const AssessmentPage: React.FC = () => {
                             </svg>
                         </div>
                         <h2 className="text-2xl font-semibold mb-sm">Assessment Complete!</h2>
-                        <p className="text-secondary mb-lg">
+                        {/* <p className="text-secondary mb-lg">
                             {responsesCount} items administered
-                        </p>
+                        </p> */}
 
                         <a href={`/dashboard/${sessionId}`} className="btn btn-primary btn-lg">
                             View Clinical Insight Report
@@ -280,12 +369,12 @@ const AssessmentPage: React.FC = () => {
                 {/* Progress header */}
                 <div className="flex justify-between items-center mb-lg">
                     <div>
-                        <span className="text-sm text-muted">Session: {sessionId?.slice(0, 8)}...</span>
+                        <span className="text-sm text-muted">Session: {sessionId}</span>
                     </div>
                     <div className="flex items-center gap-md">
-                        <span className="text-sm text-muted">
+                        {/* <span className="text-sm text-muted">
                             Items: {responsesCount}{itemsRemaining !== null && ` / ~${responsesCount + itemsRemaining}`}
-                        </span>
+                        </span> */}
                         {currentItem && (
                             <span className="score-badge average">
                                 {currentItem.item_type.toUpperCase()}
@@ -294,7 +383,7 @@ const AssessmentPage: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Theta display */}
+                {/* Theta display
                 {thetaEstimates && (
                     <div className="flex gap-sm flex-wrap mb-lg">
                         {Object.entries(thetaEstimates).map(([domain, est]) => (
@@ -303,7 +392,7 @@ const AssessmentPage: React.FC = () => {
                             </div>
                         ))}
                     </div>
-                )}
+                )} */}
 
                 {/* Current item */}
                 <div className="card p-lg">
@@ -324,6 +413,7 @@ const AssessmentPage: React.FC = () => {
             <VoiceAssessment
                 sessionId={sessionId}
                 currentQuestion={currentItem?.prompt}
+                currentItemId={currentItem?.id}
                 isListening={isVoiceActive}
                 onTranscriptReady={handleVoiceComplete}
                 onStopListening={() => setIsVoiceActive(false)}
@@ -349,3 +439,4 @@ const AssessmentPage: React.FC = () => {
 };
 
 export default AssessmentPage;
+

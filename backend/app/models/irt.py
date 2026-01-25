@@ -117,10 +117,41 @@ class SessionState(BaseModel):
     current_item_id: Optional[str] = None
     items_administered: int = 0
     
+    # Sequential item index (for ordered question flow)
+    current_item_index: int = 0
+    
+    # Simplification tracking per original item
+    simplification_attempts: dict[str, int] = Field(default_factory=dict)  # item_id -> level (0-3)
+    
+    # Accessibility accommodations
+    accommodations: "SessionAccommodations" = Field(default_factory=lambda: SessionAccommodations())
+    
+    # Clinical markers from multimodal analysis (vision, etc.)
+    clinical_markers: list = Field(default_factory=list)
+    
     # Session metadata
     started_at: datetime = Field(default_factory=datetime.utcnow)
     completed_at: Optional[datetime] = None
     is_complete: bool = False
+
+
+class SessionAccommodations(BaseModel):
+    """Accessibility accommodations applied to the session."""
+    text_only: bool = False       # All questions presented as text
+    audio_only: bool = False      # All questions read aloud (TTS)
+    skip_drawing: bool = False    # Convert drawing tasks to MCQ
+    large_text: bool = False      # Increase font size
+    extra_time: bool = False      # Extended time limits
+    
+
+class SimplificationState(BaseModel):
+    """Tracks simplification attempts for a single original item."""
+    original_item_id: str
+    original_prompt: str
+    domain: Domain
+    current_level: int = 0  # 0 = original, 1-3 = simplified
+    attempts: list[dict] = Field(default_factory=list)  # History of attempts at each level
+
 
 
 class SimulationResult(BaseModel):

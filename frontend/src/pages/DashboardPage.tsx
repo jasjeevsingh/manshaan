@@ -10,7 +10,7 @@ import { assessmentService, emotionService } from '../services/api';
 import { DomainScores } from '../components/dashboard/DomainScores';
 import { EmotionTimeline } from '../components/dashboard/EmotionTimeline';
 import { EvidenceDropdown } from '../components/dashboard/EvidenceDropdown';
-import { ClinicianOverride } from '../components/dashboard/ClinicianOverride';
+// import { ClinicianOverride } from '../components/dashboard/ClinicianOverride';
 import { PDFExport } from '../components/dashboard/PDFExport';
 import { AIDisclaimer } from '../components/compliance/AIDisclaimer';
 import type { ClinicalInsightReport, EmotionTimeline as EmotionTimelineType } from '../types';
@@ -117,7 +117,7 @@ const DashboardPage: React.FC = () => {
                 <div>
                     <h1 className="text-2xl font-bold">Clinical Insight Report</h1>
                     <p className="text-secondary text-sm mt-sm">
-                        Session: {sessionId?.slice(0, 8)}... | Generated: {new Date(report.generated_at).toLocaleString()}
+                        Session: {sessionId} | Generated: {new Date(report.generated_at).toLocaleString()}
                     </p>
                 </div>
                 <div className="flex gap-sm">
@@ -233,14 +233,14 @@ const DashboardPage: React.FC = () => {
             </div>
 
             {/* Clinician Override */}
-            <div className="mt-lg">
+            {/* <div className="mt-lg">
                 <ClinicianOverride
                     sessionId={sessionId}
                     responses={[]}
                     clinicianId="demo-clinician"
                     onOverrideApplied={() => window.location.reload()}
                 />
-            </div>
+            </div> */}
         </div>
     );
 };

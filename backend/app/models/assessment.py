@@ -111,6 +111,6 @@ class ClinicalInsightReport(BaseModel):
     
     # Regulatory disclaimer
     disclaimer: str = (
-        "This is an AI-generated Clinical Insight Report. "
-        "This is NOT a diagnosis. Consult a licensed healthcare provider."
+        "This is an AI-assisted Clinical Insight Report. "
+        "This is does not serve as an official diagnosis. Consult a licensed healthcare provider."
     )

@@ -66,6 +66,15 @@ async def analyze_drawing(
         for m in result.get("clinical_markers", [])
     ]
     
+    # Store markers in session if session_id provided
+    if request.session_id and markers:
+        from ..routers.assessment import _sessions
+        session = _sessions.get(request.session_id)
+        if session:
+            # Add markers to session
+            session.clinical_markers.extend(markers)
+            logger.info(f"Stored {len(markers)} clinical markers for session {request.session_id}")
+    
     return VisionAnalysisResponse(
         analysis=result.get("analysis", ""),
         confidence=result.get("confidence", 0.0),

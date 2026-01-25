@@ -4,7 +4,7 @@
     "items": [
         {
             "id": "EM001",
-            "prompt": "I'm going to read you a short story. Listen carefully, then I'll ask you some questions.\n\n'Sarah went to the park with her dog Max. They played fetch near the big oak tree. After an hour, they stopped for ice cream at Joe's stand.'\n\nWhat was the dog's name?",
+            "prompt": "I want you to read this short story. Pay attention to the details, then I'll ask you some questions.\n\n'Sarah went to the park with her dog Max. They played fetch near the big oak tree. After an hour, they stopped for ice cream at Joe's stand.'\n\nWhat was the dog's name?",
             "item_type": "mcq",
             "domain_loadings": {
                 "episodic_memory": 1.4
@@ -143,7 +143,7 @@
         },
         {
             "id": "EM009",
-            "prompt": "I'm going to say five words. Please remember them: Apple, Bicycle, Cloud, Doctor, Elephant.\n\nNow, what was the third word I said?",
+            "prompt": "Here are five words. Remember them carefully and their order: Apple, Bicycle, Cloud, Doctor, Elephant.\n\nNow, what was the third word I said?",
             "item_type": "mcq",
             "domain_loadings": {
                 "episodic_memory": 1.5,
@@ -261,8 +261,8 @@
         },
         {
             "id": "EF004",
-            "prompt": "I'm going to say some rules. Press 1 when I say a fruit name, but NOT if it's red.\n\nApple (press?), Banana (press?), Grape (press?), Orange (press?)\n\nHow many times should you have pressed?",
-            "item_type": "mcq",
+            "prompt": "I'm going to say some rules. Imagine pressing a button when I say a fruit name, but ONLY if it's red.\n\nApple, Banana, Grape, Orange\n\nHow many times should you have pressed?",
+            "item_type": "voice",
             "domain_loadings": {
                 "executive_function": 1.7,
                 "working_memory": 0.5
@@ -733,7 +733,7 @@
         },
         {
             "id": "VS001",
-            "prompt": "Copy this simple shape onto the drawing canvas.",
+            "prompt": "Draw a circle in the center of the canvas.",
             "item_type": "drawing",
             "domain_loadings": {
                 "visuospatial": 1.4
@@ -744,7 +744,7 @@
         },
         {
             "id": "VS002",
-            "prompt": "Copy this shape: a square with a diagonal line from corner to corner.",
+            "prompt": "Draw a square with a diagonal line from corner to corner.",
             "item_type": "drawing",
             "domain_loadings": {
                 "visuospatial": 1.5
@@ -767,7 +767,7 @@
         },
         {
             "id": "VS004",
-            "prompt": "Which shape is different from the others?",
+            "prompt": "Which item is different from the others?",
             "item_type": "mcq",
             "domain_loadings": {
                 "visuospatial": 1.3
@@ -819,7 +819,7 @@
         },
         {
             "id": "VS007",
-            "prompt": "Copy this complex figure: overlapping shapes.",
+            "prompt": "Draw two overlapping circles.",
             "item_type": "drawing",
             "domain_loadings": {
                 "visuospatial": 1.8,
@@ -878,7 +878,7 @@
         },
         {
             "id": "VS011",
-            "prompt": "Draw the Beery-Buktenica VMI Figure: a diamond inside a square.",
+            "prompt": "Draw a diamond inside a square.",
             "item_type": "drawing",
             "domain_loadings": {
                 "visuospatial": 1.7

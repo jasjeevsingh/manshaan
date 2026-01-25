@@ -246,7 +246,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                                 Analyzing...
                             </>
                         ) : (
-                            'Submit for Analysis'
+                            'Submit'
                         )}
                     </button>
                 </div>

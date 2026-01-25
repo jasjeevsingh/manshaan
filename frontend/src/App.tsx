@@ -28,7 +28,7 @@ const LoadingSpinner: React.FC = () => (
 );
 
 const Navigation: React.FC = () => {
-  const { user, signOut } = useAuthStore();
+  const { user } = useAuthStore();
 
   return (
     <nav className="sticky top-0 z-40" style={{ background: 'var(--color-primary)', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
@@ -80,13 +80,13 @@ const Navigation: React.FC = () => {
 const Footer: React.FC = () => (
   <footer className="py-lg mt-2xl" style={{ background: 'var(--color-primary)' }}>
     <div className="container">
-      <p className="text-sm mt-md text-center" style={{ color: 'rgba(255,255,255,0.9)' }}>
+      {/* <p className="text-sm mt-md text-center" style={{ color: 'rgba(255,255,255,0.9)' }}>
         AI-Generated Content - This is NOT a diagnosis. Please consult a licensed healthcare provider.
-      </p>
+      </p> */}
       <p className="text-xs mt-md text-center" style={{ color: 'rgba(255,255,255,0.7)' }}>
-        © 2026 Manshaan Platform. For research and clinical screening purposes only.
+        © 2026 Manshaan AI. For research and clinical screening purposes only.
         <br />
-        Not a diagnostic tool. Results must be interpreted by licensed healthcare providers.
+        Results must be interpreted by a licensed healthcare provider to make an official diagnosis.
       </p>
     </div>
   </footer>

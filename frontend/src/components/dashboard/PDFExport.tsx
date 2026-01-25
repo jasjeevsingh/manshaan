@@ -24,7 +24,7 @@ export const PDFExport: React.FC<PDFExportProps> = ({ sessionId, disabled }) => 
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `clinical_report_${sessionId.slice(0, 8)}.pdf`;
+            a.download = `clinical_report_${sessionId}.pdf`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
