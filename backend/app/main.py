@@ -111,6 +111,12 @@ async def health_check():
     }
 
 
+@app.get(settings.api_prefix + "/health")
+async def api_health_check():
+    """Health check endpoint for API consumers."""
+    return await health_check()
+
+
 @app.on_event("startup")
 async def startup_event():
     """Initialize services on startup."""

@@ -18,7 +18,7 @@ const HomePage: React.FC = () => {
             className="min-h-screen flex flex-col items-center justify-center"
             style={{
                 paddingTop: '2rem',
-                paddingBottom: '4rem',
+                paddingBottom: '14rem',
                 backgroundImage: `url(${backgroundImage})`,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',

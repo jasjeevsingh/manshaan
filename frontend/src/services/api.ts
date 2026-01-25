@@ -19,7 +19,7 @@ import type {
 } from '../types';
 
 const api = axios.create({
-    baseURL: '/api',
+    baseURL: import.meta.env.VITE_API_URL || '/api',
     headers: {
         'Content-Type': 'application/json',
     },
@@ -141,6 +141,17 @@ export const emotionService = {
 
     async getTimeline(sessionId: string): Promise<EmotionTimeline> {
         const response = await api.get<EmotionTimeline>(`/emotion/${sessionId}/timeline`);
+        return response.data;
+    },
+};
+
+// ============================================
+// System
+// ============================================
+
+export const systemService = {
+    async healthCheck(): Promise<{ status: string; components: any }> {
+        const response = await api.get('/health');
         return response.data;
     },
 };

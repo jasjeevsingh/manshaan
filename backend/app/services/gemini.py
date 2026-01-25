@@ -731,10 +731,14 @@ OUTPUT (JSON only, no explanation):
         emotion_data: Optional[EmotionTimeline]
     ) -> str:
         """Build prompt for clinical score interpretation."""
-        theta_text = "\n".join([
-            f"- {d.value}: θ = {t.theta:.2f}, percentile = {t.percentile:.0f}, SE = {t.standard_error:.2f}"
-            for d, t in theta_estimates.items()
-        ])
+        theta_entries = []
+        for d, t in theta_estimates.items():
+            theta_val = f"{t.theta:.2f}" if t.theta is not None else "N/A"
+            se_val = f"{t.standard_error:.2f}" if t.standard_error is not None else "N/A"
+            percentile_val = f"{t.percentile:.0f}" if t.percentile is not None else "N/A"
+            theta_entries.append(f"- {d.value}: θ = {theta_val}, percentile = {percentile_val}, SE = {se_val}")
+
+        theta_text = "\n".join(theta_entries)
         
         # Build multimodal evidence section
         markers_text = ""

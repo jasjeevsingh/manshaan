@@ -18,6 +18,7 @@ import { DrawingCanvas } from '../components/assessment/DrawingCanvas';
 import { HelpChatbot } from '../components/assessment/HelpChatbot';
 import { SessionStatus } from '../types';
 import type { IRTItem } from '../types';
+import { Link } from 'react-router-dom';
 
 const AssessmentPage: React.FC = () => {
     const {
@@ -171,6 +172,61 @@ const AssessmentPage: React.FC = () => {
     const handleDrawingComplete = (analysis: unknown) => {
         setShowDrawingCanvas(false);
         handleSubmitResponse(JSON.stringify(analysis));
+    };
+
+    // DEBUG: Auto-fill assessment
+    const handleDebugFill = async () => {
+        if (!sessionId || !currentItem) return;
+
+        if (!window.confirm('⚡ Auto-Complete Assessment?\n\nThis will randomly answer all remaining MCQs and skip other items. This cannot be undone.')) {
+            return;
+        }
+
+        setLoading(true);
+        try {
+            let nextItem: IRTItem | null = currentItem;
+            let isComplete = false;
+
+            // Loop until complete
+            while (!isComplete && nextItem) {
+                // Determine response
+                let response: string | number = '[SKIPPED]';
+
+                if (nextItem.item_type === 'mcq' && nextItem.options) {
+                    // Pick random option
+                    response = Math.floor(Math.random() * nextItem.options.length);
+                }
+
+                // Submit
+                const result = await assessmentService.submitResponse({
+                    session_id: sessionId!,
+                    item_id: nextItem.id,
+                    response,
+                    response_time_ms: 500, // Fake rapid response
+                });
+
+                // Update progress
+                updateTheta(result.theta_estimates);
+                recordResponse();
+
+                if (result.session_status === 'complete') {
+                    isComplete = true;
+                    setStatus(SessionStatus.COMPLETE);
+                    setCurrentItem(null);
+                    setItemsRemaining(null);
+                } else if (result.next_item) {
+                    nextItem = result.next_item as IRTItem;
+                    // Dont strictly need to update store every step for speed, 
+                    // but debugging might want to see progress. 
+                    // We'll just update at the end or if loop breaks.
+                }
+            }
+        } catch (err: any) {
+            console.error('Debug fill error:', err);
+            setError('Debug fill failed');
+        } finally {
+            setLoading(false);
+        }
     };
 
     // Render help section with HelpChatbot
@@ -353,9 +409,9 @@ const AssessmentPage: React.FC = () => {
                             {responsesCount} items administered
                         </p> */}
 
-                        <a href={`/dashboard/${sessionId}`} className="btn btn-primary btn-lg">
+                        <Link to={`/dashboard/${sessionId}`} className="btn btn-primary btn-lg">
                             View Clinical Insight Report
-                        </a>
+                        </Link>
                     </div>
                 </div>
             </div>
@@ -369,7 +425,15 @@ const AssessmentPage: React.FC = () => {
                 {/* Progress header */}
                 <div className="flex justify-between items-center mb-lg">
                     <div>
-                        <span className="text-sm text-muted">Session: {sessionId}</span>
+                        <span className="text-sm text-muted block">Session: {sessionId}</span>
+                        {/* Debug Button */}
+                        <button
+                            onClick={handleDebugFill}
+                            className="text-xs text-primary underline mt-xs hover:text-primary-dark"
+                            title="Dev Tool: Randomly answer remaining items"
+                        >
+                            ⚡ Debug: Auto-Complete
+                        </button>
                     </div>
                     <div className="flex items-center gap-md">
                         {/* <span className="text-sm text-muted">
