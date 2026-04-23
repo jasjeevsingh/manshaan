@@ -21,17 +21,40 @@ from ..models.assessment import (
     StartAssessmentRequest, AssessmentResponse, NextItemResponse,
     SessionStatus, ClinicalInsightReport
 )
+from ..models.user import User
 from ..services.irt_engine import get_irt_engine, IRTEngine
 from ..services.gemini import get_gemini_service, GeminiService
 from ..services.hume import get_hume_service, HumeService
 from ..services.pdf_generator import get_pdf_generator, PDFGenerator
 from ..services.trigger_detector import get_trigger_detector, AdaptiveTriggerDetector
+from .auth import get_current_user
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/assessment", tags=["Assessment"])
 
 # In-memory session storage (replace with database in production)
 _sessions: dict[str, SessionState] = {}
+
+
+def _get_session_for_user(session_id: str, current_user: User) -> SessionState:
+    """
+    Load a session and enforce ownership.
+
+    For backward compatibility with older in-memory sessions, we fall back to
+    clinician_id as owner when owner_user_id is not present.
+    """
+    session = _sessions.get(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    owner_id = session.owner_user_id or session.clinician_id
+    if owner_id and owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to access this session")
+
+    if not session.owner_user_id:
+        session.owner_user_id = current_user.id
+
+    return session
 
 
 class HelpRequest(BaseModel):
@@ -57,7 +80,8 @@ class AdaptiveResponse(BaseModel):
 @router.post("/start", response_model=dict)
 async def start_assessment(
     request: StartAssessmentRequest,
-    irt_engine: IRTEngine = Depends(get_irt_engine)
+    irt_engine: IRTEngine = Depends(get_irt_engine),
+    current_user: User = Depends(get_current_user)
 ):
     """
     Start a new assessment session.
@@ -67,7 +91,8 @@ async def start_assessment(
     # Create new session state
     session = SessionState(
         patient_id=request.patient_id,
-        clinician_id=request.clinician_id
+        clinician_id=request.clinician_id or current_user.id,
+        owner_user_id=current_user.id
     )
     
     # Get first item using sequential order
@@ -97,7 +122,8 @@ async def submit_response(
     response: AssessmentResponse,
     irt_engine: IRTEngine = Depends(get_irt_engine),
     gemini: GeminiService = Depends(get_gemini_service),
-    trigger_detector: AdaptiveTriggerDetector = Depends(get_trigger_detector)
+    trigger_detector: AdaptiveTriggerDetector = Depends(get_trigger_detector),
+    current_user: User = Depends(get_current_user)
 ):
     """
     Submit a response and get the next item (sequential with trigger-based adaptation).
@@ -109,9 +135,7 @@ async def submit_response(
     4. If not triggered: advance to next sequential item
     5. Handle accessibility accommodations
     """
-    session = _sessions.get(response.session_id)
-    if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
+    session = _get_session_for_user(response.session_id, current_user)
     
     if session.is_complete:
         raise HTTPException(status_code=400, detail="Session already complete")
@@ -274,7 +298,8 @@ async def submit_response(
 async def request_help(
     request: HelpRequest,
     irt_engine: IRTEngine = Depends(get_irt_engine),
-    gemini: GeminiService = Depends(get_gemini_service)
+    gemini: GeminiService = Depends(get_gemini_service),
+    current_user: User = Depends(get_current_user)
 ):
     """
     Patient pressed help button - trigger adaptive question or accommodation.
@@ -284,9 +309,7 @@ async def request_help(
     2. If accommodation needed, applies to session
     3. Generates simplified version of current question
     """
-    session = _sessions.get(request.session_id)
-    if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
+    session = _get_session_for_user(request.session_id, current_user)
     
     if session.is_complete:
         raise HTTPException(status_code=400, detail="Session already complete")
@@ -399,11 +422,12 @@ async def request_help(
 
 
 @router.get("/{session_id}")
-async def get_session(session_id: str):
+async def get_session(
+    session_id: str,
+    current_user: User = Depends(get_current_user)
+):
     """Get current session state."""
-    session = _sessions.get(session_id)
-    if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
+    session = _get_session_for_user(session_id, current_user)
     
     return {
         "session": session.model_dump(),
@@ -415,16 +439,15 @@ async def get_session(session_id: str):
 async def get_results(
     session_id: str,
     gemini: GeminiService = Depends(get_gemini_service),
-    hume: HumeService = Depends(get_hume_service)
+    hume: HumeService = Depends(get_hume_service),
+    current_user: User = Depends(get_current_user)
 ):
     """
     Get complete Clinical Insight Report for a session.
     
-    Generates clinical interpretation using Gemini.
+    Generates clinical interpretation using the configured LLM (OpenRouter).
     """
-    session = _sessions.get(session_id)
-    if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
+    session = _get_session_for_user(session_id, current_user)
     
     if not session.is_complete:
         raise HTTPException(
@@ -450,14 +473,13 @@ async def get_results_pdf(
     session_id: str,
     gemini: GeminiService = Depends(get_gemini_service),
     hume: HumeService = Depends(get_hume_service),
-    pdf_gen: PDFGenerator = Depends(get_pdf_generator)
+    pdf_gen: PDFGenerator = Depends(get_pdf_generator),
+    current_user: User = Depends(get_current_user)
 ):
     """Generate PDF Clinical Insight Report."""
     from fastapi.responses import Response
     
-    session = _sessions.get(session_id)
-    if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
+    session = _get_session_for_user(session_id, current_user)
     
     if not session.is_complete:
         raise HTTPException(status_code=400, detail="Session not complete")
@@ -485,7 +507,8 @@ async def get_results_pdf(
 async def run_simulation(
     true_theta: dict[str, float],
     num_items: int = 20,
-    irt_engine: IRTEngine = Depends(get_irt_engine)
+    irt_engine: IRTEngine = Depends(get_irt_engine),
+    current_user: User = Depends(get_current_user)
 ):
     """
     Run IRT simulation to demonstrate θ convergence.
@@ -505,19 +528,17 @@ async def invalidate_response(
     session_id: str,
     response_id: str,
     reason: str,
-    clinician_id: str
+    current_user: User = Depends(get_current_user)
 ):
     """Clinician override: invalidate a response."""
-    session = _sessions.get(session_id)
-    if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
+    session = _get_session_for_user(session_id, current_user)
     
     response_found = False
     for response in session.responses:
         if response.id == response_id:
             response.is_invalidated = True
             response.invalidation_reason = reason
-            response.invalidated_by = clinician_id
+            response.invalidated_by = current_user.id
             response_found = True
             break
     

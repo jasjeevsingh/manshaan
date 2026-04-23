@@ -7,6 +7,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useVoice } from '@humeai/voice-react';
+import { getAuthHeaders } from '../../lib/authHeaders';
 
 interface VoiceAssessmentProps {
     sessionId: string | null;
@@ -64,7 +65,7 @@ export const VoiceAssessment: React.FC<VoiceAssessmentProps> = ({
 
                 const response = await fetch(`${apiBaseUrl}/hume/token`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: await getAuthHeaders(),
                 });
 
                 if (!response.ok) {
@@ -145,18 +146,25 @@ export const VoiceAssessment: React.FC<VoiceAssessmentProps> = ({
 
                     // Send to emotion API
                     const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
-                    fetch(`${apiBaseUrl}/emotion/record`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            session_id: sessionId,
-                            item_id: currentItemId,
-                            emotions: topEmotions,
-                            source: 'hume_voice'
-                        })
-                    }).then(() => {
+                    void (async () => {
+                        const emotionResponse = await fetch(`${apiBaseUrl}/emotion/record`, {
+                            method: 'POST',
+                            headers: await getAuthHeaders(),
+                            body: JSON.stringify({
+                                session_id: sessionId,
+                                item_id: currentItemId,
+                                timestamp: new Date().toISOString(),
+                                emotions: topEmotions,
+                                source: 'hume_voice'
+                            })
+                        });
+
+                        if (!emotionResponse.ok) {
+                            throw new Error(`Emotion record failed: ${emotionResponse.status}`);
+                        }
+
                         log(`✓ Emotions recorded successfully`);
-                    }).catch(err => {
+                    })().catch(err => {
                         console.error('Failed to record emotions:', err);
                         log(`✗ Failed to record emotions: ${err.message}`);
                     });

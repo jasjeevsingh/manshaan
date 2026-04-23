@@ -1,7 +1,7 @@
 """
 Vision Analysis Router.
 
-Handles drawing canvas submissions and GPT-4o Vision analysis.
+Handles drawing canvas submissions and LLM vision analysis (OpenRouter).
 """
 
 from fastapi import APIRouter, HTTPException, Depends
@@ -9,7 +9,10 @@ from pydantic import BaseModel
 from typing import Optional
 import logging
 
+from ..models.user import User
 from ..services.vision import get_vision_service, VisionService
+from .assessment import _get_session_for_user
+from .auth import get_current_user
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/analyze-vision", tags=["Vision"])
@@ -37,10 +40,11 @@ class VisionAnalysisResponse(BaseModel):
 @router.post("", response_model=VisionAnalysisResponse)
 async def analyze_drawing(
     request: VisionAnalysisRequest,
-    vision: VisionService = Depends(get_vision_service)
+    vision: VisionService = Depends(get_vision_service),
+    current_user: User = Depends(get_current_user)
 ):
     """
-    Analyze a drawing submission using GPT-4o Vision.
+    Analyze a drawing submission using the configured vision model.
     
     Evaluates drawings against clinical benchmarks like Beery-Buktenica VMI.
     """
@@ -67,11 +71,9 @@ async def analyze_drawing(
     ]
     
     # Store markers in session if session_id provided
-    if request.session_id and markers:
-        from ..routers.assessment import _sessions
-        session = _sessions.get(request.session_id)
-        if session:
-            # Add markers to session
+    if request.session_id:
+        session = _get_session_for_user(request.session_id, current_user)
+        if markers:
             session.clinical_markers.extend(markers)
             logger.info(f"Stored {len(markers)} clinical markers for session {request.session_id}")
     

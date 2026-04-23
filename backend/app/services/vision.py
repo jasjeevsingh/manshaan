@@ -1,25 +1,27 @@
 """
-GPT-4o Vision Service for Drawing Analysis.
+Drawing analysis via OpenRouter (vision-capable chat completions).
 
-Analyzes drawing canvas submissions using clinical benchmarks
-(Beery-Buktenica VMI) for neurodevelopmental assessment.
+Uses clinical benchmark framing (e.g. Beery-Buktenica VMI) in prompts.
+Model is set by LLM_VISION_MODEL.
 """
 
 import base64
 import logging
 from typing import Optional
+
 from openai import AsyncOpenAI
 
 from ..config import get_settings
 from ..models.assessment import ClinicalMarker
+from .openrouter_client import get_openrouter_client
 
 logger = logging.getLogger(__name__)
 
 
 class VisionService:
     """
-    GPT-4o Vision integration for drawing analysis.
-    
+    Multimodal chat (OpenRouter) for drawing analysis.
+
     Analyzes sketches based on clinical markers from:
     - Beery-Buktenica VMI (Visual-Motor Integration)
     - Clock Drawing Test
@@ -27,10 +29,13 @@ class VisionService:
     """
     
     def __init__(self):
-        """Initialize OpenAI client."""
+        """Initialize OpenRouter client for vision-capable chat completions."""
         settings = get_settings()
-        self.client = AsyncOpenAI(api_key=settings.openai_api_key)
-        self.model = "gpt-4o"
+        if not settings.openrouter_api_key:
+            self.client: Optional[AsyncOpenAI] = None
+        else:
+            self.client = get_openrouter_client(settings)
+        self.model = settings.llm_vision_model
     
     async def analyze_drawing(
         self,
@@ -39,7 +44,7 @@ class VisionService:
         expected_elements: Optional[list[str]] = None
     ) -> dict:
         """
-        Analyze a drawing submission using GPT-4o Vision.
+        Analyze a drawing submission using the configured vision model.
         
         Args:
             image_base64: Base64 encoded image data
@@ -49,11 +54,13 @@ class VisionService:
         Returns:
             Analysis result with clinical markers and confidence
         """
+        if not self.client:
+            return self._graceful_fallback("OPENROUTER_API_KEY is not configured")
+
         try:
             # Build task-specific prompt
             prompt = self._build_analysis_prompt(task_type, expected_elements)
-            
-            # Call GPT-4o Vision
+
             response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=[
@@ -167,7 +174,7 @@ Note any concerning or notable features."""
         raw_response: str,
         task_type: str
     ) -> dict:
-        """Parse GPT-4o response into structured format."""
+        """Parse vision model response into structured format."""
         # Default structure
         result = {
             "analysis": raw_response,

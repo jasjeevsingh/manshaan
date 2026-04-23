@@ -11,6 +11,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useVoice, VoiceProvider } from '@humeai/voice-react';
+import { getAuthHeaders } from '../../lib/authHeaders';
 
 interface HelpVoiceButtonProps {
     sessionId: string | null;
@@ -46,7 +47,7 @@ const HelpVoiceInner: React.FC<HelpVoiceButtonProps> = ({
                 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
                 const response = await fetch(`${apiBaseUrl}/hume/token`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: await getAuthHeaders(),
                 });
 
                 if (!response.ok) {

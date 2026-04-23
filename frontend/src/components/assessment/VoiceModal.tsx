@@ -6,6 +6,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useVoice } from '@humeai/voice-react';
+import { getAuthHeaders } from '../../lib/authHeaders';
 // import AIDisclaimer from '../compliance/AIDisclaimer';
 
 interface VoiceModalProps {
@@ -79,9 +80,7 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({
 
                 const response = await fetch(`${apiBaseUrl}/hume/token`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: await getAuthHeaders(),
                 });
 
                 if (!response.ok) {

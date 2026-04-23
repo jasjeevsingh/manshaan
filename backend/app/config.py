@@ -22,11 +22,21 @@ class Settings(BaseSettings):
             return [origin.strip() for origin in v.split(",") if origin.strip()]
         return v
     
-    # API Keys
+    # API Keys (legacy: optional if using OpenRouter for LLM)
     openai_api_key: Optional[str] = None
     google_api_key: Optional[str] = None
     hume_api_key: Optional[str] = None
     hume_secret_key: Optional[str] = None
+
+    # OpenRouter (OpenAI-compatible): primary path for text + vision LLM calls
+    # Model IDs are slugs like "openai/gpt-4o", "google/gemini-2.0-flash-001" — see https://openrouter.ai/models
+    openrouter_api_key: Optional[str] = None
+    openrouter_base_url: str = "https://openrouter.ai/api/v1"
+    openrouter_http_referer: Optional[str] = None
+    openrouter_app_title: str = "Manshaan Clinical Platform"
+    llm_text_model: str = "google/gemini-2.0-flash-001"
+    llm_vision_model: str = "openai/gpt-4o"
+    llm_fallback_text_model: Optional[str] = None
     
     # Supabase
     supabase_url: Optional[str] = None

@@ -4,7 +4,7 @@ Hume AI Token Generation Router.
 Generates temporary access tokens for client-side EVI connections.
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 import httpx
 import base64
@@ -12,6 +12,8 @@ import logging
 import traceback
 
 from ..config import get_settings
+from ..models.user import User
+from .auth import get_current_user
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/hume", tags=["Hume AI"])
@@ -25,7 +27,9 @@ class AccessTokenResponse(BaseModel):
 
 
 @router.post("/token", response_model=AccessTokenResponse)
-async def get_hume_access_token():
+async def get_hume_access_token(
+    current_user: User = Depends(get_current_user)
+):
     """
     Generate a Hume AI access token for client-side EVI connections.
     
@@ -33,7 +37,7 @@ async def get_hume_access_token():
     that can be safely used in the browser.
     """
     try:
-        logger.info("=== Hume token endpoint called ===")
+        logger.info(f"=== Hume token endpoint called by user {current_user.id} ===")
         settings = get_settings()
         
         logger.info(f"API key present: {bool(settings.hume_api_key)}")

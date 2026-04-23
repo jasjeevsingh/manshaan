@@ -34,7 +34,7 @@ A multimodal, research-backed diagnostic platform for Neurodevelopmental Disorde
 
 - **IRT Scoring Engine**: MIRT 3PL with EAP estimation across 5 cognitive domains
 - **Empathic Voice Interface**: Hume AI integration for paralinguistic analysis
-- **Vision Analysis**: GPT-4o Vision for drawing/sketch evaluation
+- **Vision Analysis**: OpenRouter vision model for drawing/sketch evaluation
 - **Clinical Reports**: Professional PDF generation with ASD/ID differential insights
 
 ## Regulatory Compliance
@@ -59,8 +59,8 @@ Use the endpoints below to:
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    # allow_origins=settings.allowed_origins, # Restricted to localhost by default
-    allow_origin_regex=".*",                # Allows all origins (including Vercel)
+    # Restrict origins via environment-driven allowlist.
+    allow_origins=settings.allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

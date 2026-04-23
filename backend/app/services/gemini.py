@@ -1,18 +1,17 @@
 """
-Gemini Clinical Brain Service.
+Clinical LLM service (OpenRouter).
 
-Uses Gemini API to act as the "Clinical Brain" for:
-- Adaptive question generation
-- IRT score interpretation
-- Clinical Insight Report generation
-- Differential insights (ASD vs ID markers)
+Routes all text generation through the OpenAI-compatible OpenRouter API so
+models can be changed via environment variables without code edits.
 """
 
 import logging
 from typing import Optional
-import google.generativeai as genai
+
+from openai import AsyncOpenAI
 
 from ..config import get_settings
+from .openrouter_client import chat_text_complete, get_openrouter_client
 from ..models.irt import Domain, DomainTheta, SessionState
 from ..models.assessment import (
     DomainScore, DifferentialInsight, ClinicalInsightReport, ClinicalMarker
@@ -24,16 +23,42 @@ logger = logging.getLogger(__name__)
 
 class GeminiService:
     """
-    Gemini Clinical Brain for clinical interpretation and report generation.
+    Clinical LLM layer: adaptive items, reports, and interpretation (via OpenRouter).
     """
     
     def __init__(self):
-        """Initialize Gemini client."""
         settings = get_settings()
-        genai.configure(api_key=settings.google_api_key)
-        # Use gemini-2.5-flash - strong for reasoning and analysis
-        self.model = genai.GenerativeModel('gemini-2.5-flash')
-    
+        self._text_model = settings.llm_text_model
+        fb = settings.llm_fallback_text_model
+        self._fallback_model = fb if fb else self._text_model
+        self._client: Optional[AsyncOpenAI] = None
+        if settings.openrouter_api_key:
+            self._client = get_openrouter_client(settings)
+
+    async def _chat_user_prompt(
+        self,
+        prompt: str,
+        *,
+        model: Optional[str] = None,
+        temperature: float = 0.7,
+        system: Optional[str] = None,
+        response_format: Optional[dict[str, str]] = None,
+    ) -> str:
+        if not self._client:
+            raise ValueError("OPENROUTER_API_KEY is not configured")
+        m = model or self._text_model
+        messages: list[dict[str, str]] = []
+        if system:
+            messages.append({"role": "system", "content": system})
+        messages.append({"role": "user", "content": prompt})
+        return await chat_text_complete(
+            self._client,
+            model=m,
+            messages=messages,
+            temperature=temperature,
+            response_format=response_format,
+        )
+
     
     async def generate_adaptive_question(
         self,
@@ -62,18 +87,16 @@ class GeminiService:
         )
         
         try:
-            response = await self.model.generate_content_async(prompt)
-            
-            # Parse the response to extract question and options
+            text = await self._chat_user_prompt(prompt)
             item_data = self._parse_generated_item(
-                response.text, 
-                target_domain, 
-                target_difficulty
+                text,
+                target_domain,
+                target_difficulty,
             )
             return item_data
-            
+
         except Exception as e:
-            logger.error(f"Gemini adaptive question error: {e}")
+            logger.error(f"Adaptive question LLM error: {e}")
             # Fallback to item bank
             return None
     
@@ -181,7 +204,7 @@ Generate the question now:"""
         self,
         response_text: str,
         target_domain: Domain,
-        target_difficulty: float
+        target_difficulty: float,
     ) -> dict:
         """Parse Gemini's response into an IRTItem-compatible dict."""
         import re
@@ -226,7 +249,7 @@ Generate the question now:"""
             "correct_answer": correct_index,
             "is_generated": True,  # Flag to indicate this is LLM-generated
             "generation_metadata": {
-                "model": "gemini-2.5-flash",
+                "model": get_settings().llm_text_model,
                 "target_difficulty": target_difficulty,
                 "estimated_parameters": True
             }
@@ -271,9 +294,8 @@ ADJUSTMENT: [number between -2.0 and +2.0, negative = make easier, positive = ma
 REASON: [brief explanation]"""
 
         try:
-            response = await self.model.generate_content_async(prompt)
-            text = response.text
-            
+            text = await self._chat_user_prompt(prompt)
+
             # Parse response
             import re
             status_match = re.search(r'STATUS:\s*(FRUSTRATED|TOO_EASY|APPROPRIATE)', text)
@@ -445,9 +467,9 @@ IMPORTANT FORMATTING RULES:
 Generate the simplified question now:"""
 
         try:
-            response = await self.model.generate_content_async(prompt)
+            text = await self._chat_user_prompt(prompt)
             return self._parse_simplified_response(
-                response.text,
+                text,
                 domain,
                 simplification_level,
                 original_item.get("id", "UNKNOWN")
@@ -517,16 +539,15 @@ Generate the simplified question now:"""
         domain: Domain = Domain.EPISODIC_MEMORY,
         patient_issue: Optional[str] = None
     ) -> dict:
-        """Fallback to GPT-4o when Gemini fails (rate limits, etc)."""
+        """Second attempt using fallback text model (or primary) when the main call fails."""
         import uuid
-        from openai import AsyncOpenAI
-        
-        logger.warning(f"Gemini failed, falling back to GPT-4o for simplification")
+
+        if not self._client:
+            raise ValueError("OPENROUTER_API_KEY is not configured")
+
+        logger.warning("Primary simplification failed, retrying with fallback text model")
         
         try:
-            settings = get_settings()
-            client = AsyncOpenAI(api_key=settings.openai_api_key)
-            
             original_prompt = original_item.get("prompt", "")
             original_type = original_item.get("item_type", "mcq")
             original_difficulty = original_item.get("difficulty", 0.0)
@@ -577,26 +598,25 @@ Generate a simplified version. Output EXACTLY in this JSON format:
 IMPORTANT: Always include 4 options for MCQ. For voice/drawing, options can be null.
 Generate the simplified question now:"""
 
-            response = await client.chat.completions.create(
-                model="gpt-4o",
+            result_text = await chat_text_complete(
+                self._client,
+                model=self._fallback_model,
                 messages=[
                     {"role": "system", "content": "You are a clinical assessment expert who simplifies cognitive tests while maintaining validity."},
-                    {"role": "user", "content": prompt}
+                    {"role": "user", "content": prompt},
                 ],
                 temperature=0.7,
-                response_format={"type": "json_object"}
+                response_format={"type": "json_object"},
             )
-            
-            result_text = response.choices[0].message.content
             return self._parse_simplified_response(
                 result_text,
                 domain,
                 level,
                 original_item.get("id", "UNKNOWN")
             )
-            
+
         except Exception as e:
-            logger.error(f"GPT-4o fallback also failed: {e}")
+            logger.error(f"Simplification fallback also failed: {e}")
             # Ultimate fallback - simple hardcoded question
             return {
                 "id": f"SIMP_FALLBACK_{uuid.uuid4().hex[:6]}",
@@ -655,8 +675,8 @@ OUTPUT (JSON only, no explanation):
 }}"""
 
         try:
-            response = await self.model.generate_content_async(prompt)
-            return self._parse_accommodation_response(response.text)
+            text = await self._chat_user_prompt(prompt)
+            return self._parse_accommodation_response(text)
         except Exception as e:
             logger.error(f"Accommodation detection error: {e}")
             return {
@@ -718,10 +738,10 @@ OUTPUT (JSON only, no explanation):
         )
         
         try:
-            response = await self.model.generate_content_async(prompt)
-            return self._parse_differential_response(response.text)
+            text = await self._chat_user_prompt(prompt)
+            return self._parse_differential_response(text)
         except Exception as e:
-            logger.error(f"Gemini interpretation error: {e}")
+            logger.error(f"Score interpretation LLM error: {e}")
             return self._default_differential()
     
     def _build_interpretation_prompt(
@@ -963,7 +983,7 @@ Format your response with clear section headers."""
             id_indicators=["Analysis unavailable"],
             differential_confidence=0.0,
             clinical_notes="An error occurred during interpretation. Please review raw data.",
-            evidence_summary="Error in Gemini API call",
+            evidence_summary="Error in LLM API call",
             recommendations=["Retry assessment or consult support"]
         )
     
@@ -1054,7 +1074,7 @@ _gemini_service: Optional[GeminiService] = None
 
 
 def get_gemini_service() -> GeminiService:
-    """Get or create Gemini service singleton."""
+    """Get or create clinical LLM service singleton (OpenRouter-backed)."""
     global _gemini_service
     if _gemini_service is None:
         _gemini_service = GeminiService()

@@ -5,6 +5,7 @@
  */
 
 import axios from 'axios';
+import { supabase } from '../lib/supabaseClient';
 import type {
     StartAssessmentRequest,
     AssessmentResponse,
@@ -29,8 +30,17 @@ const api = axios.create({
 });
 
 // Add auth token to requests
-api.interceptors.request.use((config) => {
-    const token = localStorage.getItem('token');
+api.interceptors.request.use(async (config) => {
+    let token = localStorage.getItem('token');
+
+    // Primary auth flow uses Supabase session tokens.
+    if (!token) {
+        const {
+            data: { session },
+        } = await supabase.auth.getSession();
+        token = session?.access_token || null;
+    }
+
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }

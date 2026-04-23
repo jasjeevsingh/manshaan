@@ -5,7 +5,7 @@
             "destination": "https://manshaan-production.up.railway.app/api/:match*"
         },
         {
-            "source": "/(.*)",
+            "source": "/((?!assets/|favicon\\.jpeg|logo/|.*\\.png|.*\\.jpg|.*\\.svg|.*\\.css|.*\\.js).*)",
             "destination": "/index.html"
         }
     ]

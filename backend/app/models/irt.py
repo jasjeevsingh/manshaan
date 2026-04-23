@@ -101,6 +101,7 @@ class SessionState(BaseModel):
     session_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     patient_id: str
     clinician_id: Optional[str] = None
+    owner_user_id: Optional[str] = None
     
     # Current theta estimates per domain (EAP posterior)
     theta_estimates: dict[Domain, DomainTheta] = Field(
