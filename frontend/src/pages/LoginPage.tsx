@@ -8,7 +8,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
-import logoImage from '../logo/WhatsApp Image 2026-01-24 at 12.04.53.jpeg';
+import logoImage from '../logo/manshaan-logo.jpeg';
 
 import { useAuthStore } from '../stores/authStore';
 
@@ -42,9 +42,9 @@ const LoginPage: React.FC = () => {
       }
 
       navigate('/');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Login error:', err);
-      setError(err.message || 'Failed to sign in');
+      setError(err instanceof Error ? err.message : 'Failed to sign in');
     } finally {
       setLoading(false);
     }
@@ -60,8 +60,8 @@ const LoginPage: React.FC = () => {
         options: { redirectTo: `${window.location.origin}/` },
       });
       if (error) throw error;
-    } catch (err: any) {
-      setError(err.message || 'Failed to sign in with Google');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to sign in with Google');
       setLoading(false);
     }
   };
@@ -125,8 +125,7 @@ const LoginPage: React.FC = () => {
 
             <button
               type="submit"
-              className="w-full rounded-lg bg-gradient-to-r from-indigo-500 via-purple-500 to-orange-400 py-2.5 font-medium hover:opacity-90 transition"
-              style={{ color: '#000000' }}
+              className="w-full rounded-lg bg-gradient-to-r from-indigo-500 via-purple-500 to-orange-400 py-2.5 font-medium hover:opacity-90 transition text-white"
               disabled={loading}
             >
               {loading ? 'Signing in…' : 'Sign In'}
