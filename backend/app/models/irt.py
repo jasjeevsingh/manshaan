@@ -129,6 +129,9 @@ class SessionState(BaseModel):
     
     # Clinical markers from multimodal analysis (vision, etc.)
     clinical_markers: list = Field(default_factory=list)
+
+    # Session-scoped generated/simplified items (must never be global)
+    generated_items: dict[str, IRTItem] = Field(default_factory=dict)
     
     # Session metadata
     started_at: datetime = Field(default_factory=datetime.utcnow)

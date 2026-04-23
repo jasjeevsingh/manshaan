@@ -113,9 +113,9 @@ export const assessmentService = {
         return response.data;
     },
 
-    async invalidateResponse(sessionId: string, responseId: string, reason: string, clinicianId: string) {
+    async invalidateResponse(sessionId: string, responseId: string, reason: string) {
         const response = await api.post(`/assessment/${sessionId}/invalidate/${responseId}`, null, {
-            params: { reason, clinician_id: clinicianId },
+            params: { reason },
         });
         return response.data;
     },

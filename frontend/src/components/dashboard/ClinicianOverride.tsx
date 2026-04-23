@@ -14,14 +14,12 @@ import type { ResponseRecord } from '../../types';
 interface ClinicianOverrideProps {
     sessionId: string;
     responses: ResponseRecord[];
-    clinicianId: string;
     onOverrideApplied?: () => void;
 }
 
 export const ClinicianOverride: React.FC<ClinicianOverrideProps> = ({
     sessionId,
     responses,
-    clinicianId,
     onOverrideApplied,
 }) => {
     const [selectedResponse, setSelectedResponse] = useState<string | null>(null);
@@ -37,8 +35,7 @@ export const ClinicianOverride: React.FC<ClinicianOverrideProps> = ({
             await assessmentService.invalidateResponse(
                 sessionId,
                 selectedResponse,
-                reason,
-                clinicianId
+                reason
             );
             setSuccessMessage('Response marked as invalid. θ recalculated.');
             setSelectedResponse(null);

@@ -184,7 +184,8 @@ class IRTEngine:
     def update_theta_eap(
         self, 
         responses: list[ResponseRecord],
-        administered_items: list[str]
+        administered_items: list[str],
+        extra_items: Optional[dict[str, IRTItem]] = None
     ) -> dict[Domain, DomainTheta]:
         """
         Update θ estimates using Expected A Posteriori (EAP).
@@ -206,13 +207,16 @@ class IRTEngine:
         
         for domain in Domain:
             # Get items that load on this domain
-            relevant_items = [
-                (self.items[r.item_id], r)
-                for r in responses
-                if r.item_id in self.items 
-                and domain in self.items[r.item_id].domain_loadings
-                and r.is_correct is not None
-            ]
+            relevant_items: list[tuple[IRTItem, ResponseRecord]] = []
+            for r in responses:
+                item = None
+                if extra_items:
+                    item = extra_items.get(r.item_id)
+                if item is None:
+                    item = self.items.get(r.item_id)
+
+                if item and domain in item.domain_loadings and r.is_correct is not None:
+                    relevant_items.append((item, r))
             
             if not relevant_items:
                 # No data for this domain yet
@@ -345,7 +349,9 @@ class IRTEngine:
         session_state: SessionState,
         item_id: str,
         response: Union[int, str],
-        response_time_ms: int
+        response_time_ms: int,
+        item: Optional[IRTItem] = None,
+        extra_items: Optional[dict[str, IRTItem]] = None
     ) -> SessionState:
         """
         Process a response and update session state.
@@ -359,14 +365,14 @@ class IRTEngine:
         Returns:
             Updated session state
         """
-        item = self.items.get(item_id)
-        if not item:
+        item_obj = item or self.items.get(item_id)
+        if not item_obj:
             raise ValueError(f"Unknown item: {item_id}")
         
         # Determine correctness for MCQ
         is_correct = None
-        if item.item_type == ItemType.MCQ and item.correct_answer is not None:
-            is_correct = (response == item.correct_answer)
+        if item_obj.item_type == ItemType.MCQ and item_obj.correct_answer is not None:
+            is_correct = (response == item_obj.correct_answer)
         
         # Create response record
         record = ResponseRecord(
@@ -384,7 +390,8 @@ class IRTEngine:
         administered_ids = [r.item_id for r in session_state.responses]
         session_state.theta_estimates = self.update_theta_eap(
             session_state.responses,
-            administered_ids
+            administered_ids,
+            extra_items=extra_items
         )
         
         return session_state

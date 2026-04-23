@@ -12,28 +12,91 @@ from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Optional, Union
 import logging
+from datetime import datetime
 
-from ..models.irt import (
-    Domain, IRTItem, DomainTheta, SessionState, 
-    SimulationResult, SessionAccommodations, ItemType
-)
+from ..models.irt import Domain, IRTItem, SessionState, SimulationResult, ItemType
 from ..models.assessment import (
-    StartAssessmentRequest, AssessmentResponse, NextItemResponse,
-    SessionStatus, ClinicalInsightReport
+    StartAssessmentRequest, AssessmentResponse, SessionStatus, ClinicalInsightReport
 )
-from ..models.user import User
+from ..models.user import User, UserRole
 from ..services.irt_engine import get_irt_engine, IRTEngine
 from ..services.gemini import get_gemini_service, GeminiService
 from ..services.hume import get_hume_service, HumeService
 from ..services.pdf_generator import get_pdf_generator, PDFGenerator
+from ..services.supabase_client import get_supabase_service
 from ..services.trigger_detector import get_trigger_detector, AdaptiveTriggerDetector
 from .auth import get_current_user
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/assessment", tags=["Assessment"])
 
-# In-memory session storage (replace with database in production)
+# In-memory session cache with optional Supabase persistence.
 _sessions: dict[str, SessionState] = {}
+
+
+def _persist_session(session: SessionState) -> None:
+    """Persist session to in-memory cache and Supabase (when configured)."""
+    _sessions[session.session_id] = session
+
+    supabase = get_supabase_service().client
+    if not supabase or not session.owner_user_id:
+        return
+
+    status = "completed" if session.is_complete else "in_progress"
+    payload = {
+        "id": session.session_id,
+        "parent_id": session.owner_user_id,
+        "status": status,
+        "session_data": session.model_dump(mode="json"),
+        "completed_at": session.completed_at.isoformat() if session.completed_at else None,
+    }
+
+    try:
+        supabase.table("assessment_sessions").upsert(payload).execute()
+    except Exception as e:
+        logger.warning(f"Failed to persist session {session.session_id}: {e}")
+
+
+def _load_session(session_id: str) -> Optional[SessionState]:
+    """Load session from cache first, then Supabase if available."""
+    cached = _sessions.get(session_id)
+    if cached:
+        return cached
+
+    supabase = get_supabase_service().client
+    if not supabase:
+        return None
+
+    try:
+        response = (
+            supabase.table("assessment_sessions")
+            .select("session_data,parent_id")
+            .eq("id", session_id)
+            .limit(1)
+            .execute()
+        )
+        if not response.data:
+            return None
+
+        record = response.data[0]
+        session_data = record.get("session_data")
+        if not session_data:
+            return None
+
+        session = SessionState.model_validate(session_data)
+        # Backfill owner from canonical DB parent_id for older sessions.
+        if not session.owner_user_id and record.get("parent_id"):
+            session.owner_user_id = record["parent_id"]
+        _sessions[session_id] = session
+        return session
+    except Exception as e:
+        logger.warning(f"Failed to load session {session_id}: {e}")
+        return None
+
+
+def _get_item_for_session(session: SessionState, item_id: str, irt_engine: IRTEngine) -> Optional[IRTItem]:
+    """Resolve item from session-scoped generated items first, then base item bank."""
+    return session.generated_items.get(item_id) or irt_engine.items.get(item_id)
 
 
 def _get_session_for_user(session_id: str, current_user: User) -> SessionState:
@@ -43,7 +106,7 @@ def _get_session_for_user(session_id: str, current_user: User) -> SessionState:
     For backward compatibility with older in-memory sessions, we fall back to
     clinician_id as owner when owner_user_id is not present.
     """
-    session = _sessions.get(session_id)
+    session = _load_session(session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
@@ -53,8 +116,18 @@ def _get_session_for_user(session_id: str, current_user: User) -> SessionState:
 
     if not session.owner_user_id:
         session.owner_user_id = current_user.id
+        _persist_session(session)
 
     return session
+
+
+def _require_clinician_or_admin(current_user: User) -> None:
+    """Guard for clinician-only actions."""
+    if current_user.role not in {UserRole.CLINICIAN, UserRole.ADMIN}:
+        raise HTTPException(
+            status_code=403,
+            detail="This action requires clinician or admin role"
+        )
 
 
 class HelpRequest(BaseModel):
@@ -108,7 +181,7 @@ async def start_assessment(
     session.current_item_index = 0
     
     # Store session
-    _sessions[session.session_id] = session
+    _persist_session(session)
     
     return {
         "session_id": session.session_id,
@@ -140,8 +213,24 @@ async def submit_response(
     if session.is_complete:
         raise HTTPException(status_code=400, detail="Session already complete")
     
+    # Enforce response integrity.
+    if response.item_id != session.current_item_id:
+        raise HTTPException(
+            status_code=409,
+            detail="Response item does not match the current active item"
+        )
+
+    if any(r.item_id == response.item_id for r in session.responses):
+        raise HTTPException(
+            status_code=409,
+            detail="Duplicate response for this item is not allowed"
+        )
+
     # Get current item info
-    current_item = irt_engine.items.get(response.item_id)
+    current_item = _get_item_for_session(session, response.item_id, irt_engine)
+    if not current_item:
+        raise HTTPException(status_code=400, detail="Unknown item for this session")
+
     current_difficulty = current_item.difficulty if current_item else 0.0
     current_type = current_item.item_type if current_item else ItemType.MCQ
     
@@ -163,7 +252,9 @@ async def submit_response(
                 session,
                 response.item_id,
                 response.response,
-                response.response_time_ms
+                response.response_time_ms,
+                item=current_item,
+                extra_items=session.generated_items
             )
         except ValueError as e:
             raise HTTPException(status_code=400, detail=str(e))
@@ -250,7 +341,7 @@ async def submit_response(
                             correct_answer=simplified_item_data.get("correct_answer"),
                             instructions=simplified_item_data.get("instructions")
                         )
-                        irt_engine.items[next_item.id] = next_item
+                        session.generated_items[next_item.id] = next_item
                         is_simplified = True
                         simplification_level = new_level
                         logger.info(f"Created simplified item: {next_item.id}")
@@ -270,12 +361,13 @@ async def submit_response(
     status = SessionStatus.IN_PROGRESS
     if next_item is None:
         session.is_complete = True
+        session.completed_at = datetime.utcnow()
         status = SessionStatus.COMPLETE
     else:
         session.current_item_id = next_item.id
     
     # Update stored session
-    _sessions[response.session_id] = session
+    _persist_session(session)
     
     # Calculate remaining items
     items_remaining = None
@@ -352,7 +444,7 @@ async def request_help(
             logger.info(f"Applied accommodation: {accommodation_applied}")
     
     # Get current item
-    current_item = irt_engine.items.get(session.current_item_id)
+    current_item = _get_item_for_session(session, session.current_item_id, irt_engine)
     if not current_item:
         raise HTTPException(status_code=400, detail="No current item")
     
@@ -402,13 +494,13 @@ async def request_help(
                 correct_answer=simplified_item_data.get("correct_answer"),
                 instructions=simplified_item_data.get("instructions")
             )
-            irt_engine.items[next_item.id] = next_item
+            session.generated_items[next_item.id] = next_item
             session.current_item_id = next_item.id
         except Exception as e:
             logger.error(f"Error creating help item: {e}")
             next_item = current_item  # Fall back to current item
     
-    _sessions[request.session_id] = session
+    _persist_session(session)
     
     return AdaptiveResponse(
         next_item=next_item.model_dump() if next_item else None,
@@ -531,6 +623,7 @@ async def invalidate_response(
     current_user: User = Depends(get_current_user)
 ):
     """Clinician override: invalidate a response."""
+    _require_clinician_or_admin(current_user)
     session = _get_session_for_user(session_id, current_user)
     
     response_found = False
@@ -549,9 +642,10 @@ async def invalidate_response(
     valid_responses = [r for r in session.responses if not r.is_invalidated]
     session.theta_estimates = irt_engine.update_theta_eap(
         valid_responses,
-        [r.item_id for r in valid_responses]
+        [r.item_id for r in valid_responses],
+        extra_items=session.generated_items
     )
     
-    _sessions[session_id] = session
+    _persist_session(session)
     
     return {"success": True, "new_theta": session.theta_estimates}
