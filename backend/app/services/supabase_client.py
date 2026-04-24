@@ -8,6 +8,7 @@ from typing import Optional
 from supabase import create_client, Client
 from functools import lru_cache
 import logging
+import time
 
 from ..config import get_settings
 
@@ -52,25 +53,29 @@ class SupabaseService:
         """Get Supabase admin client (service role)."""
         return self._admin_client
     
-    def verify_token(self, token: str) -> Optional[dict]:
+    def verify_token(self, token: str, _retries: int = 3) -> Optional[dict]:
         """
         Verify JWT token from Supabase.
         
-        Args:
-            token: JWT access token
-            
-        Returns:
-            User data if valid, None otherwise
+        Retries on transient socket errors (e.g. concurrent requests on the
+        same httpx client can raise Errno 35 / Resource temporarily unavailable).
         """
         if not self._client:
             return None
         
-        try:
-            response = self._client.auth.get_user(token)
-            return response.user.model_dump() if response.user else None
-        except Exception as e:
-            logger.error(f"Token verification failed: {e}")
-            return None
+        for attempt in range(_retries):
+            try:
+                response = self._client.auth.get_user(token)
+                return response.user.model_dump() if response.user else None
+            except OSError as e:
+                if attempt < _retries - 1:
+                    time.sleep(0.1 * (attempt + 1))
+                    continue
+                logger.error(f"Token verification failed after {_retries} attempts: {e}")
+                return None
+            except Exception as e:
+                logger.error(f"Token verification failed: {e}")
+                return None
 
 
 # Singleton instance

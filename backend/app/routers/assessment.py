@@ -38,8 +38,9 @@ def _persist_session(session: SessionState) -> None:
     """Persist session to in-memory cache and Supabase (when configured)."""
     _sessions[session.session_id] = session
 
-    supabase = get_supabase_service().client
-    if not supabase or not session.owner_user_id:
+    svc = get_supabase_service()
+    db = svc.admin_client or svc.client
+    if not db or not session.owner_user_id:
         return
 
     status = "completed" if session.is_complete else "in_progress"
@@ -52,7 +53,7 @@ def _persist_session(session: SessionState) -> None:
     }
 
     try:
-        supabase.table("assessment_sessions").upsert(payload).execute()
+        db.table("assessment_sessions").upsert(payload).execute()
     except Exception as e:
         logger.warning(f"Failed to persist session {session.session_id}: {e}")
 
@@ -63,13 +64,14 @@ def _load_session(session_id: str) -> Optional[SessionState]:
     if cached:
         return cached
 
-    supabase = get_supabase_service().client
-    if not supabase:
+    svc = get_supabase_service()
+    db = svc.admin_client or svc.client
+    if not db:
         return None
 
     try:
         response = (
-            supabase.table("assessment_sessions")
+            db.table("assessment_sessions")
             .select("session_data,parent_id")
             .eq("id", session_id)
             .limit(1)
