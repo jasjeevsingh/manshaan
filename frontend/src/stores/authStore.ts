@@ -8,6 +8,8 @@ import { create } from 'zustand';
 import { supabase } from '../lib/supabaseClient';
 import type { User, Session } from '@supabase/supabase-js';
 
+let _initPromise: Promise<void> | null = null;
+
 export interface Child {
     id: string;
     parent_id: string;
@@ -100,37 +102,39 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     },
 
     initialize: async () => {
-        // Set up listener first so we don't miss anything
-        try {
-            supabase.auth.onAuthStateChange(async (_event, session) => {
-                set({ session, user: session?.user || null });
-
-                if (session?.user) {
-                    await get().fetchChildren();
-                } else {
-                    set({ children: [] });
-                }
-            });
-        } catch (e) {
-            console.error('Failed to set up auth listener:', e);
+        if (_initPromise) {
+            return _initPromise;
         }
 
+        const doInit = async () => {
         try {
-            // Get initial session
-            const { data: { session }, error } = await supabase.auth.getSession();
-            if (error) throw error;
+            await new Promise<void>((resolve) => {
+                let resolved = false;
+                supabase.auth.onAuthStateChange((_event, session) => {
+                    set({ session, user: session?.user || null });
 
-            if (session) {
-                set({ session, user: session.user });
-                await get().fetchChildren();
-            }
+                    if (session?.user) {
+                        get().fetchChildren().catch(() => {});
+                    } else {
+                        set({ children: [] });
+                    }
+
+                    if (!resolved) {
+                        resolved = true;
+                        resolve();
+                    }
+                });
+            });
         } catch (error: any) {
-            // Ignore AbortError which happens frequently in dev (strict mode)
             if (error.name !== 'AbortError') {
                 console.error('Error getting initial session:', error);
             }
         } finally {
             set({ initialized: true, loading: false });
         }
+        };
+
+        _initPromise = doInit();
+        return _initPromise;
     },
 }));

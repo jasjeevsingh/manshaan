@@ -50,14 +50,28 @@ def get_current_user(
         raise HTTPException(status_code=500, detail="Supabase not configured")
     
     try:
-        response = supabase.client.table("profiles").select("*").eq("id", user_data["id"]).execute()
+        read_client = supabase.admin_client or supabase.client
+        response = read_client.table("profiles").select("*").eq("id", user_data["id"]).execute()
+
         if not response.data or len(response.data) == 0:
-            raise HTTPException(status_code=404, detail="User profile not found")
-        
+            write_client = supabase.admin_client or supabase.client
+            meta = user_data.get("user_metadata") or {}
+            profile_data = {
+                "id": user_data["id"],
+                "email": user_data.get("email", ""),
+                "name": meta.get("full_name") or meta.get("name") or user_data.get("email", "").split("@")[0],
+                "role": "parent",
+                "provider": (user_data.get("app_metadata") or {}).get("provider", "email"),
+            }
+            write_client.table("profiles").upsert(profile_data).execute()
+            response = write_client.table("profiles").select("*").eq("id", user_data["id"]).execute()
+            if not response.data or len(response.data) == 0:
+                raise HTTPException(status_code=500, detail="Failed to create user profile")
+
         profile = response.data[0]
         
         # Fetch children
-        children_response = supabase.client.table("children").select("*").eq("parent_id", user_data["id"]).execute()
+        children_response = read_client.table("children").select("*").eq("parent_id", user_data["id"]).execute()
         children = [Child(**child) for child in children_response.data] if children_response.data else []
         
         return User(

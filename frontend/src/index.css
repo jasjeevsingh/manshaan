@@ -931,6 +931,22 @@ a:hover {
   background: linear-gradient(135deg, var(--color-primary-50) 0%, #f5f3ff 50%, #fff7ed 100%);
 }
 
+/* Login / register shared shell */
+.auth-page-shell {
+  min-height: 100vh;
+  background: linear-gradient(135deg, var(--color-primary-50) 0%, #eef8f6 38%, #f5f3ff 72%, #fff7ed 100%);
+}
+
+.auth-brand-panel {
+  background: linear-gradient(
+    155deg,
+    var(--color-primary-dark) 0%,
+    var(--color-primary) 36%,
+    var(--color-secondary-dark) 72%,
+    var(--color-accent-dark) 100%
+  );
+}
+
 .nav-app-bar {
   background: var(--color-primary);
   box-shadow: var(--shadow-sm);
@@ -950,4 +966,82 @@ a:hover {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* Guest hero: light card on top of image — keep readable when OS prefers dark */
+.hero-light-card {
+  border-color: #e2e8f0;
+  color: #0f172a;
+}
+
+.hero-light-card .hero-light-title {
+  color: #0f172a;
+}
+
+.hero-light-card .hero-light-lead {
+  color: #475569;
+}
+
+.hero-light-card .btn-secondary {
+  background: #ffffff;
+  color: var(--color-primary);
+  border: 1px solid #e2e8f0;
+  box-shadow: var(--shadow-xs);
+}
+
+.hero-light-card .btn-secondary:hover:not(:disabled) {
+  background: #f1f5f9;
+  border-color: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+/* Guest hero: subtle teal warmth on frosted card */
+.hero-light-card-warm {
+  border-color: rgba(13, 148, 136, 0.22);
+  box-shadow:
+    0 0 0 1px rgba(13, 148, 136, 0.08),
+    0 10px 15px -3px rgb(0 0 0 / 0.08),
+    0 4px 6px -4px rgb(0 0 0 / 0.05);
+}
+
+.hero-card-top-accent {
+  height: 3px;
+  width: 100%;
+  max-width: 12rem;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 1.25rem;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-secondary), var(--color-accent));
+  opacity: 0.85;
+}
+
+.nav-menu-toggle {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background var(--transition-fast);
+}
+
+.nav-menu-toggle:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.nav-menu-toggle-bar {
+  display: block;
+  width: 1.125rem;
+  height: 2px;
+  background: #fff;
+  border-radius: 1px;
 }

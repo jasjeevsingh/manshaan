@@ -9,7 +9,6 @@ import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { useAuthStore } from './stores/authStore';
 import ProtectedRoute from './components/auth/ProtectedRoute';
-import logoImage from './logo/manshaan-logo.jpeg';
 
 // Lazy load pages for code splitting
 const HomePage = React.lazy(() => import('./pages/HomePage'));
@@ -50,34 +49,35 @@ const Navigation: React.FC = () => {
 
   return (
     <nav className="sticky top-0 z-40 nav-app-bar shadow-sm">
-      <div className="container flex items-center justify-between py-md gap-md">
+      <div className="container flex items-center py-md gap-sm min-h-[3.25rem]">
         <Link
           to="/"
-          className="flex items-center gap-sm font-bold text-xl shrink-0 min-w-0"
+          className="flex items-center gap-sm font-bold text-xl shrink-0 min-w-0 mr-auto"
           style={{ color: 'white' }}
           onClick={closeMenu}
         >
-          <img
+          {/* <img
             src={logoImage}
             alt="Manshaan Logo"
             style={{ height: '40px', width: 'auto', borderRadius: '8px' }}
-          />
+          /> */}
           <span className="truncate">Manshaan</span>
         </Link>
 
-        <button
-          type="button"
-          className="md:hidden flex flex-col justify-center gap-1.5 p-2 rounded-md border border-white/40 text-white hover:bg-white/10 transition"
-          aria-label={menuOpen ? 'Close menu' : 'Open menu'}
-          aria-expanded={menuOpen}
-          onClick={() => setMenuOpen((o) => !o)}
-        >
-          <span className="block w-6 h-0.5 bg-white rounded-full" />
-          <span className="block w-6 h-0.5 bg-white rounded-full" />
-          <span className="block w-6 h-0.5 bg-white rounded-full" />
-        </button>
+        <div className="flex items-center justify-end gap-md shrink-0">
+          <button
+            type="button"
+            className="nav-menu-toggle md:hidden"
+            aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((o) => !o)}
+          >
+            <span className="nav-menu-toggle-bar" />
+            <span className="nav-menu-toggle-bar" />
+            <span className="nav-menu-toggle-bar" />
+          </button>
 
-        <div className="hidden md:flex items-center gap-md flex-wrap justify-end">
+          <div className="hidden md:flex items-center gap-md flex-wrap justify-end">
           {user ? (
             <>
               <Link
@@ -126,6 +126,7 @@ const Navigation: React.FC = () => {
               </Link>
             </>
           )}
+          </div>
         </div>
       </div>
 
